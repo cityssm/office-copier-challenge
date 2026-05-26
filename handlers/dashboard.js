@@ -3,6 +3,8 @@ import getCopiers from '../database/getCopiers.js';
 import { getConfigProperty } from '../helpers/config.helpers.js';
 const DEFAULT_COPIER_COUNT = 10;
 const HOUR_MILLIS = 60 * 60 * 1000;
+const DAY_MILLIS = 24 * HOUR_MILLIS;
+const MAX_DAYS = 60;
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
@@ -71,6 +73,22 @@ export default function handler(_request, response) {
     }
     const sortedByMostUsed = copierData.toSorted(compareByMostPrints);
     const sortedByLeastUsed = copierData.toSorted(compareByLeastPrints);
+    // Calculate actual data duration
+    let minHourStartMillis;
+    for (const hourlyMaximum of hourlyMaximums) {
+        if (minHourStartMillis === undefined ||
+            hourlyMaximum.hourStartMillis < minHourStartMillis) {
+            minHourStartMillis = hourlyMaximum.hourStartMillis;
+        }
+    }
+    let durationLabel;
+    if (minHourStartMillis === undefined) {
+        durationLabel = `Last ${MAX_DAYS} Days`;
+    }
+    else {
+        const daysOfHistory = Math.min(MAX_DAYS, Math.ceil((Date.now() - minHourStartMillis) / DAY_MILLIS));
+        durationLabel = daysOfHistory <= 1 ? 'Last Day' : `Last ${daysOfHistory} Days`;
+    }
     const defaultCopierIds = sortedByMostUsed
         .slice(0, DEFAULT_COPIER_COUNT)
         .map((copier) => copier.copierId);
@@ -97,6 +115,7 @@ export default function handler(_request, response) {
     response.render('dashboard', {
         dashboardData,
         dashboardDataJson: JSON.stringify(dashboardData).replaceAll('</', String.raw `<\/`),
+        durationLabel,
         headTitle: getConfigProperty('application.applicationName')
     });
 }

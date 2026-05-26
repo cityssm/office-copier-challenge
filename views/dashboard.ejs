@@ -21,7 +21,7 @@
         <div class="box mb-4">
           <p class="is-size-5 has-text-weight-semibold mb-2">Copiers to display</p>
           <p class="has-text-grey mb-4">
-            Default selection is the 10 most used copiers in the last 60 days.
+            Default selection is the 10 most used copiers in the <%= durationLabel.toLowerCase() %>.
           </p>
 
           <div id="copierSelection" class="columns is-multiline">
@@ -33,7 +33,7 @@
                     class="js-copier-checkbox"
                     value="<%= copier.copierId %>"
                   />
-                  <span class="ml-2"><%= copier.copierName %></span>
+                  <span class="ml-2"><%= copier.copierName %> (<%= copier.totalPrints.toLocaleString() %> prints)</span>
                 </label>
               </div>
             <% } %>
@@ -47,7 +47,7 @@
         <div class="columns is-multiline">
           <div class="column is-half">
             <div class="box has-background-success-light">
-              <p class="heading">Most Used Copier (Last 60 Days)</p>
+              <p class="heading">Most Used Copier (<%= durationLabel %>)</p>
               <% if (dashboardData.kpis.mostUsedCopier === undefined) { %>
                 <p class="title is-5">No data</p>
               <% } else { %>
@@ -64,7 +64,7 @@
 
           <div class="column is-half">
             <div class="box has-background-warning-light">
-              <p class="heading">Least Used Copier (Last 60 Days)</p>
+              <p class="heading">Least Used Copier (<%= durationLabel %>)</p>
               <% if (dashboardData.kpis.leastUsedCopier === undefined) { %>
                 <p class="title is-5">No data</p>
               <% } else { %>

@@ -6,6 +6,8 @@ import { getConfigProperty } from '../helpers/config.helpers.js'
 
 const DEFAULT_COPIER_COUNT = 10
 const HOUR_MILLIS = 60 * 60 * 1000
+const DAY_MILLIS = 24 * HOUR_MILLIS
+const MAX_DAYS = 60
 
 interface DashboardPoint {
   timeMillis: number
@@ -122,6 +124,33 @@ export default function handler(_request: Request, response: Response): void {
   const sortedByMostUsed = copierData.toSorted(compareByMostPrints)
   const sortedByLeastUsed = copierData.toSorted(compareByLeastPrints)
 
+  // Calculate actual data duration
+  let minHourStartMillis: number | undefined
+
+  for (const hourlyMaximum of hourlyMaximums) {
+    if (
+      minHourStartMillis === undefined ||
+      hourlyMaximum.hourStartMillis < minHourStartMillis
+    ) {
+      minHourStartMillis = hourlyMaximum.hourStartMillis
+    }
+  }
+
+  let durationLabel: string
+
+  if (minHourStartMillis === undefined) {
+    durationLabel = `Last ${MAX_DAYS} Days`
+  } else {
+    const daysOfHistory = Math.min(
+      MAX_DAYS,
+      Math.ceil((Date.now() - minHourStartMillis) / DAY_MILLIS)
+    )
+    durationLabel =
+      daysOfHistory <= 1
+        ? 'Last Day'
+        : `Last ${daysOfHistory} Days`
+  }
+
   const defaultCopierIds = sortedByMostUsed
     .slice(0, DEFAULT_COPIER_COUNT)
     .map((copier) => copier.copierId)
@@ -156,6 +185,7 @@ export default function handler(_request: Request, response: Response): void {
       '</',
       String.raw`<\/`
     ),
+    durationLabel,
     headTitle: getConfigProperty('application.applicationName')
   })
 }
