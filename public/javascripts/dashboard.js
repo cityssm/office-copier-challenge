@@ -1,5 +1,6 @@
 "use strict";
 const HOUR_MILLIS = 60 * 60 * 1000;
+const DAY_MILLIS = 24 * HOUR_MILLIS;
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
@@ -37,6 +38,10 @@ function buildHourlyDeltaSeries(hourlyCounts) {
     if (!(chartContainerElement instanceof HTMLDivElement)) {
         return;
     }
+    const chartDurationDaysElement = document.querySelector('#chartDurationDays');
+    if (!(chartDurationDaysElement instanceof HTMLSelectElement)) {
+        return;
+    }
     const toggleHiddenCopiersElement = document.querySelector('#toggleHiddenCopiers');
     if (!(toggleHiddenCopiersElement instanceof HTMLButtonElement)) {
         return;
@@ -48,6 +53,8 @@ function buildHourlyDeltaSeries(hourlyCounts) {
     }
     const chart = echarts.init(chartContainerElement);
     const updateChart = () => {
+        const selectedDurationDays = Number(chartDurationDaysElement.value);
+        const cutoffMillis = Date.now() - (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS;
         const selectedCopierIds = [
             ...document.querySelectorAll('.js-copier-checkbox:checked')
         ].map((checkboxElement) => Number(checkboxElement.value));
@@ -74,7 +81,7 @@ function buildHourlyDeltaSeries(hourlyCounts) {
                 name: copier.copierName,
                 type: 'line',
                 showSymbol: false,
-                data: buildHourlyDeltaSeries(copier.hourlyCounts)
+                data: buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
             }))
         });
     };
@@ -102,6 +109,10 @@ function buildHourlyDeltaSeries(hourlyCounts) {
             updateCopierVisibility();
         });
     }
+    chartDurationDaysElement.value = String(dashboardData.defaultDurationDays);
+    chartDurationDaysElement.addEventListener('change', () => {
+        updateChart();
+    });
     toggleHiddenCopiersElement.addEventListener('click', () => {
         showHiddenCopiers = !showHiddenCopiers;
         updateHiddenCopiersButton();

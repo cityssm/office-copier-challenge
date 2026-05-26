@@ -24,6 +24,28 @@
             Default selection is the 10 most used copiers in the <%= durationLabel.toLowerCase() %>.
           </p>
 
+          <div class="field mb-4">
+            <label class="label is-small" for="chartDurationDays">Data to display</label>
+            <div class="control">
+              <div class="select is-small">
+                <select id="chartDurationDays">
+                  <% if (dashboardData.durationOptions.length === 0) { %>
+                    <option value="<%= dashboardData.defaultDurationDays %>" selected>No data available</option>
+                  <% } else { %>
+                    <% for (const durationOption of dashboardData.durationOptions) { %>
+                      <option
+                        value="<%= durationOption.days %>"
+                        <%= durationOption.days === dashboardData.defaultDurationDays ? 'selected' : '' %>
+                      >
+                        <%= durationOption.label %>
+                      </option>
+                    <% } %>
+                  <% } %>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <% const copierCount = dashboardData.copiers.length %>
           <% const baseBandSize = Math.floor(copierCount / 3) %>
           <% const remainderCount = copierCount % 3 %>

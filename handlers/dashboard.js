@@ -5,6 +5,24 @@ const DEFAULT_COPIER_COUNT = 10;
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
 const MAX_DAYS = 60;
+const DURATION_PRESETS = [
+    {
+        days: 1,
+        label: 'Past 24 Hours'
+    },
+    {
+        days: 7,
+        label: 'Past 7 Days'
+    },
+    {
+        days: 30,
+        label: 'Past 30 Days'
+    },
+    {
+        days: 60,
+        label: 'Past 60 Days'
+    }
+];
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
@@ -66,33 +84,27 @@ export default function handler(_request, response) {
         copier.totalPrints = getTotalPrints(copier.hourlyCounts);
     }
     const sortedByMostUsed = copierData.toSorted(compareByMostPrints);
-    // Calculate actual data duration
-    let minHourStartMillis;
-    for (const hourlyMaximum of hourlyMaximums) {
-        if (minHourStartMillis === undefined ||
-            hourlyMaximum.hourStartMillis < minHourStartMillis) {
-            minHourStartMillis = hourlyMaximum.hourStartMillis;
-        }
-    }
-    let durationLabel;
-    if (minHourStartMillis === undefined) {
-        durationLabel = `Last ${MAX_DAYS} Days`;
-    }
-    else {
-        const daysOfHistory = Math.min(MAX_DAYS, Math.ceil((Date.now() - minHourStartMillis) / DAY_MILLIS));
-        durationLabel = daysOfHistory <= 1 ? 'Last Day' : `Last ${daysOfHistory} Days`;
-    }
+    const nowMillis = Date.now();
+    const durationOptions = DURATION_PRESETS.filter((durationPreset) => hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis >=
+        nowMillis - durationPreset.days * DAY_MILLIS));
+    const defaultDurationDays = durationOptions.length > 0
+        ? durationOptions[durationOptions.length - 1].days
+        : MAX_DAYS;
+    const defaultDurationLabel = durationOptions.find((durationOption) => durationOption.days === defaultDurationDays)
+        ?.label ?? 'Past 60 Days';
     const defaultCopierIds = sortedByMostUsed
         .slice(0, DEFAULT_COPIER_COUNT)
         .map((copier) => copier.copierId);
     const dashboardData = {
         copiers: sortedByMostUsed,
-        defaultCopierIds
+        defaultCopierIds,
+        defaultDurationDays,
+        durationOptions
     };
     response.render('dashboard', {
         dashboardData,
         dashboardDataJson: JSON.stringify(dashboardData).replaceAll('</', String.raw `<\/`),
-        durationLabel,
+        durationLabel: defaultDurationLabel,
         headTitle: getConfigProperty('application.applicationName')
     });
 }

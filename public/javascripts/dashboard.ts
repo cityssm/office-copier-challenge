@@ -1,4 +1,5 @@
 const HOUR_MILLIS = 60 * 60 * 1000
+const DAY_MILLIS = 24 * HOUR_MILLIS
 
 interface DashboardPoint {
   timeMillis: number
@@ -14,6 +15,11 @@ interface DashboardCopier {
 interface DashboardData {
   copiers: DashboardCopier[]
   defaultCopierIds: number[]
+  defaultDurationDays: number
+  durationOptions: Array<{
+    days: number
+    label: string
+  }>
 }
 
 function normalizeToHour(timeMillis: number): number {
@@ -71,6 +77,12 @@ function buildHourlyDeltaSeries(
     return
   }
 
+  const chartDurationDaysElement = document.querySelector('#chartDurationDays')
+
+  if (!(chartDurationDaysElement instanceof HTMLSelectElement)) {
+    return
+  }
+
   const toggleHiddenCopiersElement = document.querySelector(
     '#toggleHiddenCopiers'
   )
@@ -90,6 +102,10 @@ function buildHourlyDeltaSeries(
   const chart = echarts.init(chartContainerElement)
 
   const updateChart = (): void => {
+    const selectedDurationDays = Number(chartDurationDaysElement.value)
+    const cutoffMillis =
+      Date.now() - (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS
+
     const selectedCopierIds = [
       ...document.querySelectorAll<HTMLInputElement>('.js-copier-checkbox:checked')
     ].map((checkboxElement) => Number(checkboxElement.value))
@@ -119,7 +135,9 @@ function buildHourlyDeltaSeries(
         name: copier.copierName,
         type: 'line',
         showSymbol: false,
-        data: buildHourlyDeltaSeries(copier.hourlyCounts)
+        data: buildHourlyDeltaSeries(copier.hourlyCounts).filter(
+          ([timeMillis]) => timeMillis >= cutoffMillis
+        )
       }))
     })
   }
@@ -164,6 +182,11 @@ function buildHourlyDeltaSeries(
       updateCopierVisibility()
     })
   }
+
+  chartDurationDaysElement.value = String(dashboardData.defaultDurationDays)
+  chartDurationDaysElement.addEventListener('change', () => {
+    updateChart()
+  })
 
   toggleHiddenCopiersElement.addEventListener('click', () => {
     showHiddenCopiers = !showHiddenCopiers

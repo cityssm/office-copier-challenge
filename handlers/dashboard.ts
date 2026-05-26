@@ -9,9 +9,33 @@ const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
 const MAX_DAYS = 60
 
+const DURATION_PRESETS = [
+  {
+    days: 1,
+    label: 'Past 24 Hours'
+  },
+  {
+    days: 7,
+    label: 'Past 7 Days'
+  },
+  {
+    days: 30,
+    label: 'Past 30 Days'
+  },
+  {
+    days: 60,
+    label: 'Past 60 Days'
+  }
+] as const
+
 interface DashboardPoint {
   timeMillis: number
   countValue: number
+}
+
+interface DashboardDurationOption {
+  days: number
+  label: string
 }
 
 interface DashboardCopierData {
@@ -106,32 +130,23 @@ export default function handler(_request: Request, response: Response): void {
   }
 
   const sortedByMostUsed = copierData.toSorted(compareByMostPrints)
-  // Calculate actual data duration
-  let minHourStartMillis: number | undefined
-
-  for (const hourlyMaximum of hourlyMaximums) {
-    if (
-      minHourStartMillis === undefined ||
-      hourlyMaximum.hourStartMillis < minHourStartMillis
-    ) {
-      minHourStartMillis = hourlyMaximum.hourStartMillis
-    }
-  }
-
-  let durationLabel: string
-
-  if (minHourStartMillis === undefined) {
-    durationLabel = `Last ${MAX_DAYS} Days`
-  } else {
-    const daysOfHistory = Math.min(
-      MAX_DAYS,
-      Math.ceil((Date.now() - minHourStartMillis) / DAY_MILLIS)
+  const nowMillis = Date.now()
+  const durationOptions = DURATION_PRESETS.filter((durationPreset) =>
+    hourlyMaximums.some(
+      (hourlyMaximum) =>
+        hourlyMaximum.hourStartMillis >=
+        nowMillis - durationPreset.days * DAY_MILLIS
     )
-    durationLabel =
-      daysOfHistory <= 1
-        ? 'Last Day'
-        : `Last ${daysOfHistory} Days`
-  }
+  ) as DashboardDurationOption[]
+
+  const defaultDurationDays =
+    durationOptions.length > 0
+      ? durationOptions[durationOptions.length - 1].days
+      : MAX_DAYS
+
+  const defaultDurationLabel =
+    durationOptions.find((durationOption) => durationOption.days === defaultDurationDays)
+      ?.label ?? 'Past 60 Days'
 
   const defaultCopierIds = sortedByMostUsed
     .slice(0, DEFAULT_COPIER_COUNT)
@@ -139,7 +154,9 @@ export default function handler(_request: Request, response: Response): void {
 
   const dashboardData = {
     copiers: sortedByMostUsed,
-    defaultCopierIds
+    defaultCopierIds,
+    defaultDurationDays,
+    durationOptions
   }
 
   response.render('dashboard', {
@@ -148,7 +165,7 @@ export default function handler(_request: Request, response: Response): void {
       '</',
       String.raw`<\/`
     ),
-    durationLabel,
+    durationLabel: defaultDurationLabel,
     headTitle: getConfigProperty('application.applicationName')
   })
 }
