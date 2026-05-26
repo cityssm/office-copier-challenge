@@ -23,9 +23,6 @@ const DURATION_PRESETS = [
         label: 'Past 60 Days'
     }
 ];
-function normalizeToHour(timeMillis) {
-    return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
-}
 function getHourlyMaximumValues(hourlyCounts) {
     const maximumCountByHour = new Map();
     for (const hourlyCount of hourlyCounts) {
@@ -39,6 +36,9 @@ function getHourlyMaximumValues(hourlyCounts) {
     return [...maximumCountByHour.entries()]
         .toSorted(([hourA], [hourB]) => hourA - hourB)
         .map(([timeMillis, countValue]) => ({ timeMillis, countValue }));
+}
+function normalizeToHour(timeMillis) {
+    return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
 function compareByMostPrints(copierA, copierB) {
     if (copierB.totalPrints !== copierA.totalPrints) {
