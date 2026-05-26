@@ -1,7 +1,5 @@
 <!doctype html>
 <html
-  class="has-background-grey"
-  id="is-login-page"
   data-theme="light"
   lang="en"
 >
@@ -17,20 +15,8 @@
   </head>
 
   <body>
-    <div class="columns is-vcentered is-centered mx-0 my-0" style="min-height:100vh">
-      <div class="column is-half-widescreen is-two-thirds-desktop is-three-quarters-tablet">
-        <main class="box mx-3 my-3 py-5">
-          <div class="columns is-vcentered">
-            <div class="column">
-              <h1 class="title is-3 has-text-centered">
-                <%= configFunctions.getConfigProperty("application.applicationName") %>
-              </h1>
-
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
+    <script src="<%= urlPrefix %>/lib/echarts/echarts.js"></script>
+    <script src="<%= urlPrefix %>/javascripts/dashboard.js"></script>
 
     <script src="<%= urlPrefix %>/lib/fa/js/all.min.js" defer></script>
   </body>

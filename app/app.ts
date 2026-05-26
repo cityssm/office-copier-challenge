@@ -79,6 +79,7 @@ if (urlPrefix !== '') {
 app
   .use(urlPrefix, express.static('public'))
   .use(`${urlPrefix}/lib/bulma`, express.static('node_modules/bulma/css'))
+  .use(`${urlPrefix}/lib/echarts`, express.static('node_modules/echarts/dist'))
   .use(
     `${urlPrefix}/lib/fa/js/all.min.js`,
     express.static('node_modules/@fortawesome/fontawesome-free/js/all.min.js')

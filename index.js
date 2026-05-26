@@ -16,7 +16,7 @@ const debug = Debug(`${DEBUG_NAMESPACE}:index`);
 let doShutdown = false;
 function initializeCluster() {
     const directoryName = path.dirname(fileURLToPath(import.meta.url));
-    const processCount = Math.min(getConfigProperty('application.maximumProcesses'), os.cpus().length * 2);
+    const processCount = Math.min(4, os.cpus().length * 2);
     const applicationName = getConfigProperty('application.applicationName');
     process.title = `${applicationName} (Primary)`;
     debug(`Primary pid:   ${process.pid}`);
