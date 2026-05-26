@@ -1,3 +1,4 @@
+import { minutesToMillis } from '@cityssm/to-millis';
 import Debug from 'debug';
 import exitHook from 'exit-hook';
 import snmp from 'net-snmp';
@@ -5,6 +6,7 @@ import getCopiers from '../database/getCopiers.js';
 import recordCopierCount from '../database/recordCopierCount.js';
 import { DEBUG_NAMESPACE } from '../debug.config.js';
 import { community, oids } from '../helpers/oid.helpers.js';
+const pollingInterval = minutesToMillis(15);
 const debug = Debug(`${DEBUG_NAMESPACE}:tasks:snmp`);
 function pollCopiers() {
     const copiers = getCopiers();
@@ -37,7 +39,7 @@ function pollCopiers() {
     }
 }
 pollCopiers();
-const interval = setInterval(pollCopiers, 5 * 60 * 1000);
+const interval = setInterval(pollCopiers, pollingInterval);
 exitHook(() => {
     clearInterval(interval);
 });
