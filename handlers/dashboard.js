@@ -1,6 +1,19 @@
 import getCopierHourlyMaximums from '../database/getCopierHourlyMaximums.js';
 import getCopiers from '../database/getCopiers.js';
 import { getConfigProperty } from '../helpers/config.helpers.js';
+const DEFAULT_COPIER_COUNT = 10;
+function compareByMostPrints(copierA, copierB) {
+    if (copierB.totalPrints !== copierA.totalPrints) {
+        return copierB.totalPrints - copierA.totalPrints;
+    }
+    return copierA.copierName.localeCompare(copierB.copierName);
+}
+function compareByLeastPrints(copierA, copierB) {
+    if (copierA.totalPrints !== copierB.totalPrints) {
+        return copierA.totalPrints - copierB.totalPrints;
+    }
+    return copierA.copierName.localeCompare(copierB.copierName);
+}
 function getTotalPrints(hourlyCounts) {
     let previousCountValue;
     let totalPrints = 0;
@@ -12,7 +25,7 @@ function getTotalPrints(hourlyCounts) {
     }
     return totalPrints;
 }
-export default function handler(request, response) {
+export default function handler(_request, response) {
     const hourlyMaximums = getCopierHourlyMaximums();
     const activeCopiers = getCopiers();
     const copiersById = new Map();
@@ -37,25 +50,25 @@ export default function handler(request, response) {
     for (const copier of copierData) {
         copier.totalPrints = getTotalPrints(copier.hourlyCounts);
     }
-    const sortedByMostUsed = [...copierData].sort((a, b) => b.totalPrints - a.totalPrints || a.copierName.localeCompare(b.copierName));
-    const sortedByLeastUsed = [...copierData].sort((a, b) => a.totalPrints - b.totalPrints || a.copierName.localeCompare(b.copierName));
+    const sortedByMostUsed = copierData.toSorted(compareByMostPrints);
+    const sortedByLeastUsed = copierData.toSorted(compareByLeastPrints);
     const defaultCopierIds = sortedByMostUsed
-        .slice(0, 10)
+        .slice(0, DEFAULT_COPIER_COUNT)
         .map((copier) => copier.copierId);
-    const mostUsedCopier = sortedByMostUsed[0];
-    const leastUsedCopier = sortedByLeastUsed[0];
+    const mostUsedCopier = sortedByMostUsed.at(0);
+    const leastUsedCopier = sortedByLeastUsed.at(0);
     const dashboardData = {
         copiers: copierData,
         defaultCopierIds,
         kpis: {
             mostUsedCopier: mostUsedCopier === undefined
-                ? null
+                ? undefined
                 : {
                     copierName: mostUsedCopier.copierName,
                     totalPrints: mostUsedCopier.totalPrints
                 },
             leastUsedCopier: leastUsedCopier === undefined
-                ? null
+                ? undefined
                 : {
                     copierName: leastUsedCopier.copierName,
                     totalPrints: leastUsedCopier.totalPrints
@@ -63,8 +76,8 @@ export default function handler(request, response) {
         }
     };
     response.render('dashboard', {
-        headTitle: getConfigProperty('application.applicationName'),
         dashboardData,
-        dashboardDataJson: JSON.stringify(dashboardData).replaceAll('</', '<\\/')
+        dashboardDataJson: JSON.stringify(dashboardData).replaceAll('</', String.raw `<\/`),
+        headTitle: getConfigProperty('application.applicationName')
     });
 }

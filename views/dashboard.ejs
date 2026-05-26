@@ -32,7 +32,6 @@
                     type="checkbox"
                     class="js-copier-checkbox"
                     value="<%= copier.copierId %>"
-                    <% if (dashboardData.defaultCopierIds.includes(copier.copierId)) { %>checked<% } %>
                   />
                   <span class="ml-2"><%= copier.copierName %></span>
                 </label>
@@ -49,7 +48,7 @@
           <div class="column is-half">
             <div class="box has-background-success-light">
               <p class="heading">Most Used Copier (Last 60 Days)</p>
-              <% if (dashboardData.kpis.mostUsedCopier === null) { %>
+              <% if (dashboardData.kpis.mostUsedCopier === undefined) { %>
                 <p class="title is-5">No data</p>
               <% } else { %>
                 <p class="title is-4"><%= dashboardData.kpis.mostUsedCopier.copierName %></p>
@@ -66,7 +65,7 @@
           <div class="column is-half">
             <div class="box has-background-warning-light">
               <p class="heading">Least Used Copier (Last 60 Days)</p>
-              <% if (dashboardData.kpis.leastUsedCopier === null) { %>
+              <% if (dashboardData.kpis.leastUsedCopier === undefined) { %>
                 <p class="title is-5">No data</p>
               <% } else { %>
                 <p class="title is-4"><%= dashboardData.kpis.leastUsedCopier.copierName %></p>

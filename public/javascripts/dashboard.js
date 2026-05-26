@@ -23,7 +23,7 @@ function buildHourlyDeltaSeries(hourlyCounts) {
     if (!(chartContainerElement instanceof HTMLDivElement)) {
         return;
     }
-    const dashboardData = JSON.parse(dashboardDataElement.textContent ?? '{}');
+    const dashboardData = JSON.parse(dashboardDataElement.text);
     const copierDataById = new Map();
     for (const copierData of dashboardData.copiers) {
         copierDataById.set(copierData.copierId, copierData);

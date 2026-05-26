@@ -16,8 +16,8 @@ interface DashboardData {
 
 function buildHourlyDeltaSeries(
   hourlyCounts: DashboardPoint[]
-): [timeMillis: number, hourlyPrints: number][] {
-  const deltaSeries: [timeMillis: number, hourlyPrints: number][] = []
+): Array<[timeMillis: number, hourlyPrints: number]> {
+  const deltaSeries: Array<[timeMillis: number, hourlyPrints: number]> = []
   let previousCountValue: number | undefined
 
   for (const hourlyCount of hourlyCounts) {
@@ -47,7 +47,7 @@ function buildHourlyDeltaSeries(
     return
   }
 
-  const dashboardData = JSON.parse(dashboardDataElement.textContent ?? '{}') as DashboardData
+  const dashboardData = JSON.parse(dashboardDataElement.text) as DashboardData
 
   const copierDataById = new Map<number, DashboardCopier>()
 
