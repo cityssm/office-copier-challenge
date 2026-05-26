@@ -99,8 +99,8 @@ function buildHourlyDeltaSeries(hourlyCounts) {
     showHiddenCopiersElement.addEventListener('change', () => {
         updateCopierVisibility();
     });
-    updateCopierVisibility();
     updateChart();
+    updateCopierVisibility();
     window.addEventListener('resize', () => {
         chart.resize();
     });

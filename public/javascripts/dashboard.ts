@@ -158,8 +158,8 @@ function buildHourlyDeltaSeries(
     updateCopierVisibility()
   })
 
-  updateCopierVisibility()
   updateChart()
+  updateCopierVisibility()
 
   window.addEventListener('resize', () => {
     chart.resize()
