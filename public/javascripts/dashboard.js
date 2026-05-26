@@ -37,6 +37,10 @@ function buildHourlyDeltaSeries(hourlyCounts) {
     if (!(chartContainerElement instanceof HTMLDivElement)) {
         return;
     }
+    const showHiddenCopiersElement = document.querySelector('#showHiddenCopiers');
+    if (!(showHiddenCopiersElement instanceof HTMLInputElement)) {
+        return;
+    }
     const dashboardData = JSON.parse(dashboardDataElement.text);
     const copierDataById = new Map();
     for (const copierData of dashboardData.copiers) {
@@ -75,12 +79,27 @@ function buildHourlyDeltaSeries(hourlyCounts) {
         });
     };
     const checkboxElements = document.querySelectorAll('.js-copier-checkbox');
+    const updateCopierVisibility = () => {
+        const showHiddenCopiers = showHiddenCopiersElement.checked;
+        for (const checkboxElement of checkboxElements) {
+            const copierOptionElement = checkboxElement.closest('.js-copier-option');
+            if (!(copierOptionElement instanceof HTMLDivElement)) {
+                continue;
+            }
+            copierOptionElement.classList.toggle('is-hidden', !showHiddenCopiers && !checkboxElement.checked);
+        }
+    };
     for (const checkboxElement of checkboxElements) {
         checkboxElement.checked = dashboardData.defaultCopierIds.includes(Number(checkboxElement.value));
         checkboxElement.addEventListener('change', () => {
             updateChart();
+            updateCopierVisibility();
         });
     }
+    showHiddenCopiersElement.addEventListener('change', () => {
+        updateCopierVisibility();
+    });
+    updateCopierVisibility();
     updateChart();
     window.addEventListener('resize', () => {
         chart.resize();

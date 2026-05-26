@@ -71,6 +71,12 @@ function buildHourlyDeltaSeries(
     return
   }
 
+  const showHiddenCopiersElement = document.querySelector('#showHiddenCopiers')
+
+  if (!(showHiddenCopiersElement instanceof HTMLInputElement)) {
+    return
+  }
+
   const dashboardData = JSON.parse(dashboardDataElement.text) as DashboardData
 
   const copierDataById = new Map<number, DashboardCopier>()
@@ -120,6 +126,23 @@ function buildHourlyDeltaSeries(
     '.js-copier-checkbox'
   )
 
+  const updateCopierVisibility = (): void => {
+    const showHiddenCopiers = showHiddenCopiersElement.checked
+
+    for (const checkboxElement of checkboxElements) {
+      const copierOptionElement = checkboxElement.closest('.js-copier-option')
+
+      if (!(copierOptionElement instanceof HTMLDivElement)) {
+        continue
+      }
+
+      copierOptionElement.classList.toggle(
+        'is-hidden',
+        !showHiddenCopiers && !checkboxElement.checked
+      )
+    }
+  }
+
   for (const checkboxElement of checkboxElements) {
     checkboxElement.checked = dashboardData.defaultCopierIds.includes(
       Number(checkboxElement.value)
@@ -127,9 +150,15 @@ function buildHourlyDeltaSeries(
 
     checkboxElement.addEventListener('change', () => {
       updateChart()
+      updateCopierVisibility()
     })
   }
 
+  showHiddenCopiersElement.addEventListener('change', () => {
+    updateCopierVisibility()
+  })
+
+  updateCopierVisibility()
   updateChart()
 
   window.addEventListener('resize', () => {

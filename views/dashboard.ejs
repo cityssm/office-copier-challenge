@@ -24,9 +24,14 @@
             Default selection is the 10 most used copiers in the <%= durationLabel.toLowerCase() %>.
           </p>
 
+          <label class="checkbox is-block mb-4">
+            <input id="showHiddenCopiers" type="checkbox" />
+            <span class="ml-2">Show hidden copiers</span>
+          </label>
+
           <div id="copierSelection" class="columns is-multiline">
             <% for (const copier of dashboardData.copiers) { %>
-              <div class="column is-half-tablet is-one-third-desktop">
+              <div class="column is-half-tablet is-one-third-desktop js-copier-option">
                 <label class="checkbox">
                   <input
                     type="checkbox"
