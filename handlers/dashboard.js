@@ -6,6 +6,20 @@ const HOUR_MILLIS = 60 * 60 * 1000;
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
+function getHourlyMaximumValues(hourlyCounts) {
+    const maximumCountByHour = new Map();
+    for (const hourlyCount of hourlyCounts) {
+        const hourStartMillis = normalizeToHour(hourlyCount.timeMillis);
+        const currentMaximumCount = maximumCountByHour.get(hourStartMillis);
+        if (currentMaximumCount === undefined ||
+            hourlyCount.countValue > currentMaximumCount) {
+            maximumCountByHour.set(hourStartMillis, hourlyCount.countValue);
+        }
+    }
+    return [...maximumCountByHour.entries()]
+        .toSorted(([hourA], [hourB]) => hourA - hourB)
+        .map(([timeMillis, countValue]) => ({ timeMillis, countValue }));
+}
 function compareByMostPrints(copierA, copierB) {
     if (copierB.totalPrints !== copierA.totalPrints) {
         return copierB.totalPrints - copierA.totalPrints;
@@ -52,6 +66,7 @@ export default function handler(_request, response) {
     }
     const copierData = [...copiersById.values()];
     for (const copier of copierData) {
+        copier.hourlyCounts = getHourlyMaximumValues(copier.hourlyCounts);
         copier.totalPrints = getTotalPrints(copier.hourlyCounts);
     }
     const sortedByMostUsed = copierData.toSorted(compareByMostPrints);

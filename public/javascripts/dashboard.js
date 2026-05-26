@@ -4,16 +4,26 @@ function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
 function buildHourlyDeltaSeries(hourlyCounts) {
+    const maximumCountByHour = new Map();
+    for (const hourlyCount of hourlyCounts) {
+        const hourStartMillis = normalizeToHour(hourlyCount.timeMillis);
+        const currentMaximumCount = maximumCountByHour.get(hourStartMillis);
+        if (currentMaximumCount === undefined ||
+            hourlyCount.countValue > currentMaximumCount) {
+            maximumCountByHour.set(hourStartMillis, hourlyCount.countValue);
+        }
+    }
+    const sortedHourlyMaximums = [...maximumCountByHour.entries()].toSorted(([hourA], [hourB]) => hourA - hourB);
     const deltaSeries = [];
     let previousCountValue;
-    for (const hourlyCount of hourlyCounts) {
+    for (const [timeMillis, countValue] of sortedHourlyMaximums) {
         if (previousCountValue !== undefined) {
             deltaSeries.push([
-                normalizeToHour(hourlyCount.timeMillis),
-                Math.max(0, hourlyCount.countValue - previousCountValue)
+                timeMillis,
+                Math.max(0, countValue - previousCountValue)
             ]);
         }
-        previousCountValue = hourlyCount.countValue;
+        previousCountValue = countValue;
     }
     return deltaSeries;
 }

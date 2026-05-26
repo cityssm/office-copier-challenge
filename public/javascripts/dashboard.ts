@@ -23,18 +23,36 @@ function normalizeToHour(timeMillis: number): number {
 function buildHourlyDeltaSeries(
   hourlyCounts: DashboardPoint[]
 ): Array<[timeMillis: number, hourlyPrints: number]> {
+  const maximumCountByHour = new Map<number, number>()
+
+  for (const hourlyCount of hourlyCounts) {
+    const hourStartMillis = normalizeToHour(hourlyCount.timeMillis)
+    const currentMaximumCount = maximumCountByHour.get(hourStartMillis)
+
+    if (
+      currentMaximumCount === undefined ||
+      hourlyCount.countValue > currentMaximumCount
+    ) {
+      maximumCountByHour.set(hourStartMillis, hourlyCount.countValue)
+    }
+  }
+
+  const sortedHourlyMaximums = [...maximumCountByHour.entries()].toSorted(
+    ([hourA], [hourB]) => hourA - hourB
+  )
+
   const deltaSeries: Array<[timeMillis: number, hourlyPrints: number]> = []
   let previousCountValue: number | undefined
 
-  for (const hourlyCount of hourlyCounts) {
+  for (const [timeMillis, countValue] of sortedHourlyMaximums) {
     if (previousCountValue !== undefined) {
       deltaSeries.push([
-        normalizeToHour(hourlyCount.timeMillis),
-        Math.max(0, hourlyCount.countValue - previousCountValue)
+        timeMillis,
+        Math.max(0, countValue - previousCountValue)
       ])
     }
 
-    previousCountValue = hourlyCount.countValue
+    previousCountValue = countValue
   }
 
   return deltaSeries
