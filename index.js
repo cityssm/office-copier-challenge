@@ -71,7 +71,10 @@ function initializeCluster() {
 }
 function startApplication() {
     initializeDatabase();
-    const childProcesses = [fork(path.join('tasks', 'snmp.task.js'))];
+    const childProcesses = [
+        fork(path.join('tasks', 'snmp.task.js')),
+        fork(path.join('tasks', 'purgeCounts.task.js'))
+    ];
     exitHook(() => {
         for (const childProcess of childProcesses) {
             const pid = childProcess.pid;

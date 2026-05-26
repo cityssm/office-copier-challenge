@@ -4,6 +4,7 @@ import exitHook from 'exit-hook'
 import snmp from 'net-snmp'
 
 import getCopiers from '../database/getCopiers.js'
+import getLatestCopierCountValue from '../database/getLatestCopierCountValue.js'
 import recordCopierCount from '../database/recordCopierCount.js'
 import { DEBUG_NAMESPACE } from '../debug.config.js'
 import { community, oids } from '../helpers/oid.helpers.js'
@@ -11,6 +12,41 @@ import { community, oids } from '../helpers/oid.helpers.js'
 const pollingInterval = minutesToMillis(15)
 
 const debug = Debug(`${DEBUG_NAMESPACE}:tasks:snmp`)
+
+function recordLastKnownCount(copier: {
+  copierId: number
+  copierName: string
+  ipAddress: string
+}, oid: string): void {
+  let lastCountValue: number | undefined
+
+  try {
+    lastCountValue = getLatestCopierCountValue({
+      copierId: copier.copierId,
+      countType: oid
+    })
+  } catch (error) {
+    debug(
+      `Error loading last known value for copier ${copier.copierName} (${copier.ipAddress}) and OID ${oid}:`,
+      error
+    )
+    return
+  }
+
+  if (lastCountValue === undefined) {
+    return
+  }
+
+  debug(
+    `Recording last known count for copier ${copier.copierName} (${copier.ipAddress}): OID ${oid}, Value ${lastCountValue}`
+  )
+
+  recordCopierCount({
+    copierId: copier.copierId,
+    countType: oid,
+    countValue: lastCountValue
+  })
+}
 
 function pollCopiers(): void {
   const copiers = getCopiers()
@@ -25,7 +61,10 @@ function pollCopiers(): void {
             `Error polling copier ${copier.copierName} (${copier.ipAddress}):`,
             error
           )
+          recordLastKnownCount(copier, oid)
         } else {
+          let didRecordCurrentValue = false
+
           for (const varbind of varbinds ?? []) {
             if (snmp.isVarbindError(varbind)) {
               debug(
@@ -33,21 +72,34 @@ function pollCopiers(): void {
                 snmp.varbindError(varbind)
               )
             } else {
-              const value = varbind.value
+              const countValue = Number(varbind.value)
+
+              if (!Number.isFinite(countValue)) {
+                debug(
+                  `Received non-numeric SNMP value from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${varbind.value?.toString() ?? 'undefined'}`
+                )
+                continue
+              }
 
               debug(
-                `Received SNMP data from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${value?.toString() ?? 'undefined'}`
+                `Received SNMP data from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${countValue}`
               )
 
               recordCopierCount({
                 copierId: copier.copierId,
                 countType: varbind.oid,
-                countValue: Number(value)
+                countValue
               })
+
+              didRecordCurrentValue = true
 
               // If we received a valid response, we can stop waiting for more responses
               return
             }
+          }
+
+          if (!didRecordCurrentValue) {
+            recordLastKnownCount(copier, oid)
           }
         }
       })
