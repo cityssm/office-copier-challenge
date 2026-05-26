@@ -1,0 +1,17 @@
+.nyc_output/
+bin/daemon/
+coverage/
+daemon/
+
+data/*.db
+data/*.db-journal
+data/*.db-shm
+data/*.db-wal
+
+data/config.d.ts
+data/config.js
+data/config.ts
+
+node_modules/
+
+.tsbuildinfo

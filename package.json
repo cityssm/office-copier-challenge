@@ -1,0 +1,55 @@
+{
+  "name": "office-copier-challenge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An initiative to help reduce paper usage by tracking how much we print.",
+  "keywords": [
+    "snmp",
+    "printers"
+  ],
+  "homepage": "https://github.com/cityssm/office-copier-challenge#readme",
+  "bugs": {
+    "url": "https://github.com/cityssm/office-copier-challenge/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cityssm/office-copier-challenge.git"
+  },
+  "license": "MIT",
+  "author": "The Corporation of the City of Sault Ste. Marie",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon ./index.js",
+    "start": "node ./index.js"
+  },
+  "dependencies": {
+    "@cityssm/configurator": "^0.1.0",
+    "@cityssm/to-millis": "^1.0.1",
+    "@cityssm/utils-datetime": "^1.3.0",
+    "@fortawesome/fontawesome-free": "^7.2.0",
+    "better-sqlite3": "^12.10.0",
+    "bulma": "^1.0.4",
+    "compression": "^1.8.1",
+    "debug": "^4.4.3",
+    "echarts": "^6.1.0",
+    "ejs": "^6.0.1",
+    "exit-hook": "^5.1.0",
+    "express": "^5.2.1",
+    "http-errors": "^2.0.1",
+    "net-snmp": "^3.26.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/net-snmp": "^3.23.0",
+    "@types/node": "^25.9.1",
+    "eslint-config-cityssm": "^40.1.0",
+    "nodemon": "^3.1.14",
+    "prettier-config-cityssm": "^2.1.2"
+  },
+  "optionalDependencies": {
+    "node-windows": "^1.0.0-beta.8"
+  }
+}

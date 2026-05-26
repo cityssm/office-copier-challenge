@@ -1,0 +1,9 @@
+{
+  "events": {
+    "start": "cls || clear"
+  },
+  "ignore": ["public/javascripts/*"],
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
