@@ -24,13 +24,17 @@
             Default selection is the 10 most used copiers in the <%= durationLabel.toLowerCase() %>.
           </p>
 
+          <% const copierCount = dashboardData.copiers.length %>
+          <% const topBandEndIndex = Math.ceil(copierCount / 3) %>
+          <% const middleBandEndIndex = Math.ceil((copierCount * 2) / 3) %>
+
           <div id="copierSelection" class="columns is-multiline">
             <% for (let copierIndex = 0; copierIndex < dashboardData.copiers.length; copierIndex += 1) { %>
               <% const copier = dashboardData.copiers[copierIndex] %>
               <% const copierBandClass =
-                copierIndex < dashboardData.copiers.length / 3
+                copierIndex < topBandEndIndex
                   ? 'has-background-danger-light'
-                  : copierIndex < (dashboardData.copiers.length * 2) / 3
+                  : copierIndex < middleBandEndIndex
                     ? 'has-background-warning-light'
                     : 'has-background-success-light' %>
               <div class="column is-half-tablet is-one-third-desktop js-copier-option">

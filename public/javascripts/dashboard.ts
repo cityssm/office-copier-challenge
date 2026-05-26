@@ -9,7 +9,6 @@ interface DashboardCopier {
   copierId: number
   copierName: string
   hourlyCounts: DashboardPoint[]
-  totalPrints: number
 }
 
 interface DashboardData {
