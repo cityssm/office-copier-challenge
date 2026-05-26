@@ -25,8 +25,12 @@
           </p>
 
           <% const copierCount = dashboardData.copiers.length %>
-          <% const topBandEndIndex = Math.ceil(copierCount / 3) %>
-          <% const middleBandEndIndex = Math.ceil((copierCount * 2) / 3) %>
+          <% const baseBandSize = Math.floor(copierCount / 3) %>
+          <% const remainderCount = copierCount % 3 %>
+          <% const topBandSize = baseBandSize + (remainderCount >= 1 ? 1 : 0) %>
+          <% const middleBandSize = baseBandSize + (remainderCount >= 2 ? 1 : 0) %>
+          <% const topBandEndIndex = topBandSize %>
+          <% const middleBandEndIndex = topBandSize + middleBandSize %>
 
           <div id="copierSelection" class="columns is-multiline">
             <% for (let copierIndex = 0; copierIndex < dashboardData.copiers.length; copierIndex += 1) { %>
