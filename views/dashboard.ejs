@@ -41,6 +41,12 @@
                   : copierIndex < middleBandEndIndex
                     ? 'has-background-warning-light'
                     : 'has-background-success-light' %>
+              <% const copierTierLabel =
+                copierIndex < topBandEndIndex
+                  ? 'High usage'
+                  : copierIndex < middleBandEndIndex
+                    ? 'Medium usage'
+                    : 'Low usage' %>
               <div class="column is-half-tablet is-one-third-desktop js-copier-option">
                 <label class="checkbox is-block p-2 <%= copierBandClass %>">
                   <input
@@ -48,7 +54,8 @@
                     class="js-copier-checkbox"
                     value="<%= copier.copierId %>"
                   />
-                  <span class="ml-2"><%= copier.copierName %> (<%= copier.totalPrints.toLocaleString() %> prints)</span>
+                  <span class="ml-2 tag is-light mr-2"><%= copierTierLabel %></span>
+                  <span><%= copier.copierName %> (<%= copier.totalPrints.toLocaleString() %> prints)</span>
                 </label>
               </div>
             <% } %>
