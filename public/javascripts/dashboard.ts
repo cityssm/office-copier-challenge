@@ -9,6 +9,7 @@ interface DashboardCopier {
   copierId: number
   copierName: string
   hourlyCounts: DashboardPoint[]
+  totalPrints: number
 }
 
 interface DashboardData {
@@ -71,9 +72,11 @@ function buildHourlyDeltaSeries(
     return
   }
 
-  const showHiddenCopiersElement = document.querySelector('#showHiddenCopiers')
+  const toggleHiddenCopiersElement = document.querySelector(
+    '#toggleHiddenCopiers'
+  )
 
-  if (!(showHiddenCopiersElement instanceof HTMLInputElement)) {
+  if (!(toggleHiddenCopiersElement instanceof HTMLButtonElement)) {
     return
   }
 
@@ -125,10 +128,19 @@ function buildHourlyDeltaSeries(
   const checkboxElements = document.querySelectorAll<HTMLInputElement>(
     '.js-copier-checkbox'
   )
+  let showHiddenCopiers = false
+
+  const updateHiddenCopiersButton = (): void => {
+    toggleHiddenCopiersElement.textContent = showHiddenCopiers
+      ? 'Hide hidden copiers'
+      : 'Show hidden copiers'
+    toggleHiddenCopiersElement.setAttribute(
+      'aria-pressed',
+      showHiddenCopiers ? 'true' : 'false'
+    )
+  }
 
   const updateCopierVisibility = (): void => {
-    const showHiddenCopiers = showHiddenCopiersElement.checked
-
     for (const checkboxElement of checkboxElements) {
       const copierOptionElement = checkboxElement.closest('.js-copier-option')
 
@@ -154,10 +166,13 @@ function buildHourlyDeltaSeries(
     })
   }
 
-  showHiddenCopiersElement.addEventListener('change', () => {
+  toggleHiddenCopiersElement.addEventListener('click', () => {
+    showHiddenCopiers = !showHiddenCopiers
+    updateHiddenCopiersButton()
     updateCopierVisibility()
   })
 
+  updateHiddenCopiersButton()
   updateChart()
   updateCopierVisibility()
 

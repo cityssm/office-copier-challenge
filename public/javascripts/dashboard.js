@@ -37,8 +37,8 @@ function buildHourlyDeltaSeries(hourlyCounts) {
     if (!(chartContainerElement instanceof HTMLDivElement)) {
         return;
     }
-    const showHiddenCopiersElement = document.querySelector('#showHiddenCopiers');
-    if (!(showHiddenCopiersElement instanceof HTMLInputElement)) {
+    const toggleHiddenCopiersElement = document.querySelector('#toggleHiddenCopiers');
+    if (!(toggleHiddenCopiersElement instanceof HTMLButtonElement)) {
         return;
     }
     const dashboardData = JSON.parse(dashboardDataElement.text);
@@ -79,8 +79,14 @@ function buildHourlyDeltaSeries(hourlyCounts) {
         });
     };
     const checkboxElements = document.querySelectorAll('.js-copier-checkbox');
+    let showHiddenCopiers = false;
+    const updateHiddenCopiersButton = () => {
+        toggleHiddenCopiersElement.textContent = showHiddenCopiers
+            ? 'Hide hidden copiers'
+            : 'Show hidden copiers';
+        toggleHiddenCopiersElement.setAttribute('aria-pressed', showHiddenCopiers ? 'true' : 'false');
+    };
     const updateCopierVisibility = () => {
-        const showHiddenCopiers = showHiddenCopiersElement.checked;
         for (const checkboxElement of checkboxElements) {
             const copierOptionElement = checkboxElement.closest('.js-copier-option');
             if (!(copierOptionElement instanceof HTMLDivElement)) {
@@ -96,9 +102,12 @@ function buildHourlyDeltaSeries(hourlyCounts) {
             updateCopierVisibility();
         });
     }
-    showHiddenCopiersElement.addEventListener('change', () => {
+    toggleHiddenCopiersElement.addEventListener('click', () => {
+        showHiddenCopiers = !showHiddenCopiers;
+        updateHiddenCopiersButton();
         updateCopierVisibility();
     });
+    updateHiddenCopiersButton();
     updateChart();
     updateCopierVisibility();
     window.addEventListener('resize', () => {
