@@ -82,9 +82,10 @@
                     class="js-copier-checkbox"
                     value="<%= copier.copierId %>"
                   />
-                  <span class="icon ml-2 mr-2" role="img" aria-label="<%= copierTierLabel %>" title="<%= copierTierLabel %>">
+                  <span class="icon ml-2 mr-2" title="<%= copierTierLabel %>">
                     <i class="<%= copierTierIconClass %>" aria-hidden="true"></i>
                   </span>
+                  <span class="is-sr-only"><%= copierTierLabel %></span>
                   <span><%= copier.copierName %> (<%= copier.totalPrints.toLocaleString() %> prints)</span>
                 </label>
               </div>
