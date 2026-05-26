@@ -15,10 +15,20 @@ function recordLastKnownCount(copier: {
   copierName: string
   ipAddress: string
 }, oid: string): void {
-  const lastCountValue = getLatestCopierCountValue({
-    copierId: copier.copierId,
-    countType: oid
-  })
+  let lastCountValue: number | undefined
+
+  try {
+    lastCountValue = getLatestCopierCountValue({
+      copierId: copier.copierId,
+      countType: oid
+    })
+  } catch (error) {
+    debug(
+      `Error loading last known value for copier ${copier.copierName} (${copier.ipAddress}) and OID ${oid}:`,
+      error
+    )
+    return
+  }
 
   if (lastCountValue === undefined) {
     return
@@ -62,6 +72,9 @@ function pollCopiers(): void {
               const countValue = Number(varbind.value)
 
               if (!Number.isFinite(countValue)) {
+                debug(
+                  `Received non-numeric SNMP value from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${varbind.value?.toString() ?? 'undefined'}`
+                )
                 continue
               }
 

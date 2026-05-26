@@ -8,10 +8,17 @@ import { DEBUG_NAMESPACE } from '../debug.config.js';
 import { community, oids } from '../helpers/oid.helpers.js';
 const debug = Debug(`${DEBUG_NAMESPACE}:tasks:snmp`);
 function recordLastKnownCount(copier, oid) {
-    const lastCountValue = getLatestCopierCountValue({
-        copierId: copier.copierId,
-        countType: oid
-    });
+    let lastCountValue;
+    try {
+        lastCountValue = getLatestCopierCountValue({
+            copierId: copier.copierId,
+            countType: oid
+        });
+    }
+    catch (error) {
+        debug(`Error loading last known value for copier ${copier.copierName} (${copier.ipAddress}) and OID ${oid}:`, error);
+        return;
+    }
     if (lastCountValue === undefined) {
         return;
     }
@@ -41,6 +48,7 @@ function pollCopiers() {
                         else {
                             const countValue = Number(varbind.value);
                             if (!Number.isFinite(countValue)) {
+                                debug(`Received non-numeric SNMP value from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${varbind.value?.toString() ?? 'undefined'}`);
                                 continue;
                             }
                             debug(`Received SNMP data from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${countValue}`);
