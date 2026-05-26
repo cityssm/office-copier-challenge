@@ -5,6 +5,7 @@ import getCopiers from '../database/getCopiers.js'
 import { getConfigProperty } from '../helpers/config.helpers.js'
 
 const DEFAULT_COPIER_COUNT = 10
+const HOUR_MILLIS = 60 * 60 * 1000
 
 interface DashboardPoint {
   timeMillis: number
@@ -21,6 +22,10 @@ interface DashboardCopierData {
 interface DashboardKpi {
   copierName: string
   totalPrints: number
+}
+
+function normalizeToHour(timeMillis: number): number {
+  return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS
 }
 
 function compareByMostPrints(
@@ -80,7 +85,7 @@ export default function handler(_request: Request, response: Response): void {
 
     if (copierData !== undefined) {
       copierData.hourlyCounts.push({
-        timeMillis: hourlyMaximum.hourStartMillis,
+        timeMillis: normalizeToHour(hourlyMaximum.hourStartMillis),
         countValue: hourlyMaximum.countValue
       })
     }
@@ -103,7 +108,7 @@ export default function handler(_request: Request, response: Response): void {
   const leastUsedCopier = sortedByLeastUsed.at(0)
 
   const dashboardData = {
-    copiers: copierData,
+    copiers: sortedByMostUsed,
     defaultCopierIds,
     kpis: {
       mostUsedCopier:

@@ -2,6 +2,10 @@ import getCopierHourlyMaximums from '../database/getCopierHourlyMaximums.js';
 import getCopiers from '../database/getCopiers.js';
 import { getConfigProperty } from '../helpers/config.helpers.js';
 const DEFAULT_COPIER_COUNT = 10;
+const HOUR_MILLIS = 60 * 60 * 1000;
+function normalizeToHour(timeMillis) {
+    return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
+}
 function compareByMostPrints(copierA, copierB) {
     if (copierB.totalPrints !== copierA.totalPrints) {
         return copierB.totalPrints - copierA.totalPrints;
@@ -41,7 +45,7 @@ export default function handler(_request, response) {
         const copierData = copiersById.get(hourlyMaximum.copierId);
         if (copierData !== undefined) {
             copierData.hourlyCounts.push({
-                timeMillis: hourlyMaximum.hourStartMillis,
+                timeMillis: normalizeToHour(hourlyMaximum.hourStartMillis),
                 countValue: hourlyMaximum.countValue
             });
         }
@@ -58,7 +62,7 @@ export default function handler(_request, response) {
     const mostUsedCopier = sortedByMostUsed.at(0);
     const leastUsedCopier = sortedByLeastUsed.at(0);
     const dashboardData = {
-        copiers: copierData,
+        copiers: sortedByMostUsed,
         defaultCopierIds,
         kpis: {
             mostUsedCopier: mostUsedCopier === undefined

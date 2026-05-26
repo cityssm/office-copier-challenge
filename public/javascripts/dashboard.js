@@ -1,11 +1,15 @@
 "use strict";
+const HOUR_MILLIS = 60 * 60 * 1000;
+function normalizeToHour(timeMillis) {
+    return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
+}
 function buildHourlyDeltaSeries(hourlyCounts) {
     const deltaSeries = [];
     let previousCountValue;
     for (const hourlyCount of hourlyCounts) {
         if (previousCountValue !== undefined) {
             deltaSeries.push([
-                hourlyCount.timeMillis,
+                normalizeToHour(hourlyCount.timeMillis),
                 Math.max(0, hourlyCount.countValue - previousCountValue)
             ]);
         }
@@ -36,6 +40,7 @@ function buildHourlyDeltaSeries(hourlyCounts) {
         const selectedCopiers = selectedCopierIds
             .map((copierId) => copierDataById.get(copierId))
             .filter((copier) => copier !== undefined);
+        chart.clear();
         chart.setOption({
             animation: false,
             tooltip: {

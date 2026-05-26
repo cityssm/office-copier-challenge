@@ -1,3 +1,5 @@
+const HOUR_MILLIS = 60 * 60 * 1000
+
 interface DashboardPoint {
   timeMillis: number
   countValue: number
@@ -14,6 +16,10 @@ interface DashboardData {
   defaultCopierIds: number[]
 }
 
+function normalizeToHour(timeMillis: number): number {
+  return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS
+}
+
 function buildHourlyDeltaSeries(
   hourlyCounts: DashboardPoint[]
 ): Array<[timeMillis: number, hourlyPrints: number]> {
@@ -23,7 +29,7 @@ function buildHourlyDeltaSeries(
   for (const hourlyCount of hourlyCounts) {
     if (previousCountValue !== undefined) {
       deltaSeries.push([
-        hourlyCount.timeMillis,
+        normalizeToHour(hourlyCount.timeMillis),
         Math.max(0, hourlyCount.countValue - previousCountValue)
       ])
     }
@@ -65,6 +71,8 @@ function buildHourlyDeltaSeries(
     const selectedCopiers = selectedCopierIds
       .map((copierId) => copierDataById.get(copierId))
       .filter((copier): copier is DashboardCopier => copier !== undefined)
+
+    chart.clear()
 
     chart.setOption({
       animation: false,
