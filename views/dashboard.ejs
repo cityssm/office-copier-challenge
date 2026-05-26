@@ -44,41 +44,6 @@
           <div id="copierUsageChart" style="height: 420px"></div>
         </div>
 
-        <div class="columns is-multiline">
-          <div class="column is-half">
-            <div class="box has-background-success-light">
-              <p class="heading">Most Used Copier (<%= durationLabel %>)</p>
-              <% if (dashboardData.kpis.mostUsedCopier === undefined) { %>
-                <p class="title is-5">No data</p>
-              <% } else { %>
-                <p class="title is-4"><%= dashboardData.kpis.mostUsedCopier.copierName %></p>
-                <p class="is-size-5">
-                  <span class="icon mr-1"><i class="fa-solid fa-file-lines"></i></span>
-                  <span>
-                    <%= dashboardData.kpis.mostUsedCopier.totalPrints.toLocaleString() %> prints
-                  </span>
-                </p>
-              <% } %>
-            </div>
-          </div>
-
-          <div class="column is-half">
-            <div class="box has-background-warning-light">
-              <p class="heading">Least Used Copier (<%= durationLabel %>)</p>
-              <% if (dashboardData.kpis.leastUsedCopier === undefined) { %>
-                <p class="title is-5">No data</p>
-              <% } else { %>
-                <p class="title is-4"><%= dashboardData.kpis.leastUsedCopier.copierName %></p>
-                <p class="is-size-5">
-                  <span class="icon mr-1"><i class="fa-solid fa-file-lines"></i></span>
-                  <span>
-                    <%= dashboardData.kpis.leastUsedCopier.totalPrints.toLocaleString() %> prints
-                  </span>
-                </p>
-              <% } %>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 

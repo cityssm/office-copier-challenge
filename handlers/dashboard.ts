@@ -21,11 +21,6 @@ interface DashboardCopierData {
   totalPrints: number
 }
 
-interface DashboardKpi {
-  copierName: string
-  totalPrints: number
-}
-
 function getHourlyMaximumValues(hourlyCounts: DashboardPoint[]): DashboardPoint[] {
   const maximumCountByHour = new Map<number, number>()
 
@@ -57,17 +52,6 @@ function compareByMostPrints(
 ): number {
   if (copierB.totalPrints !== copierA.totalPrints) {
     return copierB.totalPrints - copierA.totalPrints
-  }
-
-  return copierA.copierName.localeCompare(copierB.copierName)
-}
-
-function compareByLeastPrints(
-  copierA: DashboardCopierData,
-  copierB: DashboardCopierData
-): number {
-  if (copierA.totalPrints !== copierB.totalPrints) {
-    return copierA.totalPrints - copierB.totalPrints
   }
 
   return copierA.copierName.localeCompare(copierB.copierName)
@@ -122,8 +106,6 @@ export default function handler(_request: Request, response: Response): void {
   }
 
   const sortedByMostUsed = copierData.toSorted(compareByMostPrints)
-  const sortedByLeastUsed = copierData.toSorted(compareByLeastPrints)
-
   // Calculate actual data duration
   let minHourStartMillis: number | undefined
 
@@ -155,28 +137,9 @@ export default function handler(_request: Request, response: Response): void {
     .slice(0, DEFAULT_COPIER_COUNT)
     .map((copier) => copier.copierId)
 
-  const mostUsedCopier = sortedByMostUsed.at(0)
-  const leastUsedCopier = sortedByLeastUsed.at(0)
-
   const dashboardData = {
     copiers: sortedByMostUsed,
-    defaultCopierIds,
-    kpis: {
-      mostUsedCopier:
-        mostUsedCopier === undefined
-          ? undefined
-          : ({
-              copierName: mostUsedCopier.copierName,
-              totalPrints: mostUsedCopier.totalPrints
-            } satisfies DashboardKpi),
-      leastUsedCopier:
-        leastUsedCopier === undefined
-          ? undefined
-          : ({
-              copierName: leastUsedCopier.copierName,
-              totalPrints: leastUsedCopier.totalPrints
-            } satisfies DashboardKpi)
-    }
+    defaultCopierIds
   }
 
   response.render('dashboard', {

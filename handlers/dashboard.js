@@ -28,12 +28,6 @@ function compareByMostPrints(copierA, copierB) {
     }
     return copierA.copierName.localeCompare(copierB.copierName);
 }
-function compareByLeastPrints(copierA, copierB) {
-    if (copierA.totalPrints !== copierB.totalPrints) {
-        return copierA.totalPrints - copierB.totalPrints;
-    }
-    return copierA.copierName.localeCompare(copierB.copierName);
-}
 function getTotalPrints(hourlyCounts) {
     let previousCountValue;
     let totalPrints = 0;
@@ -72,7 +66,6 @@ export default function handler(_request, response) {
         copier.totalPrints = getTotalPrints(copier.hourlyCounts);
     }
     const sortedByMostUsed = copierData.toSorted(compareByMostPrints);
-    const sortedByLeastUsed = copierData.toSorted(compareByLeastPrints);
     // Calculate actual data duration
     let minHourStartMillis;
     for (const hourlyMaximum of hourlyMaximums) {
@@ -92,25 +85,9 @@ export default function handler(_request, response) {
     const defaultCopierIds = sortedByMostUsed
         .slice(0, DEFAULT_COPIER_COUNT)
         .map((copier) => copier.copierId);
-    const mostUsedCopier = sortedByMostUsed.at(0);
-    const leastUsedCopier = sortedByLeastUsed.at(0);
     const dashboardData = {
         copiers: sortedByMostUsed,
-        defaultCopierIds,
-        kpis: {
-            mostUsedCopier: mostUsedCopier === undefined
-                ? undefined
-                : {
-                    copierName: mostUsedCopier.copierName,
-                    totalPrints: mostUsedCopier.totalPrints
-                },
-            leastUsedCopier: leastUsedCopier === undefined
-                ? undefined
-                : {
-                    copierName: leastUsedCopier.copierName,
-                    totalPrints: leastUsedCopier.totalPrints
-                }
-        }
+        defaultCopierIds
     };
     response.render('dashboard', {
         dashboardData,
