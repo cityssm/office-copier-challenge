@@ -5,28 +5,28 @@ export default function purgeCopierCountsByHour() {
     const database = sqlite(copierDB);
     const result = database
         .prepare(`
-      DELETE FROM
-        CopierCounts
+      DELETE FROM CopierCounts
       WHERE
         countId IN (
           SELECT
             countId
-          FROM (
-            SELECT
-              countId,
-              ROW_NUMBER() OVER (
-                PARTITION BY
-                  copierId,
-                  countType,
-                  (timeMillis / @hourMillis)
-                ORDER BY
-                  countValue DESC,
-                  timeMillis DESC,
-                  countId DESC
-              ) AS rowNum
-            FROM
-              CopierCounts
-          )
+          FROM
+            (
+              SELECT
+                countId,
+                ROW_NUMBER() OVER (
+                  PARTITION BY
+                    copierId,
+                    countType,
+                    (timeMillis / @hourMillis)
+                  ORDER BY
+                    countValue DESC,
+                    timeMillis DESC,
+                    countId DESC
+                ) AS rowNum
+              FROM
+                CopierCounts
+            )
           WHERE
             rowNum > 1
         )

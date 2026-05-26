@@ -9,28 +9,28 @@ export default function purgeCopierCountsByHour(): number {
 
   const result = database
     .prepare(/* sql */ `
-      DELETE FROM
-        CopierCounts
+      DELETE FROM CopierCounts
       WHERE
         countId IN (
           SELECT
             countId
-          FROM (
-            SELECT
-              countId,
-              ROW_NUMBER() OVER (
-                PARTITION BY
-                  copierId,
-                  countType,
-                  (timeMillis / @hourMillis)
-                ORDER BY
-                  countValue DESC,
-                  timeMillis DESC,
-                  countId DESC
-              ) AS rowNum
-            FROM
-              CopierCounts
-          )
+          FROM
+            (
+              SELECT
+                countId,
+                ROW_NUMBER() OVER (
+                  PARTITION BY
+                    copierId,
+                    countType,
+                    (timeMillis / @hourMillis)
+                  ORDER BY
+                    countValue DESC,
+                    timeMillis DESC,
+                    countId DESC
+                ) AS rowNum
+              FROM
+                CopierCounts
+            )
           WHERE
             rowNum > 1
         )
