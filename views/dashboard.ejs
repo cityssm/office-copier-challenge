@@ -7,18 +7,86 @@
     <meta charset="utf-8" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>
-      <%= configFunctions.getConfigProperty("application.applicationName") %>
-    </title>
+    <title><%= headTitle %></title>
 
     <link href="<%= urlPrefix %>/lib/bulma/bulma.min.css" rel="stylesheet" />
+    <link href="<%= urlPrefix %>/lib/fa/css/all.min.css" rel="stylesheet" />
   </head>
 
   <body>
+    <section class="section">
+      <div class="container is-fluid">
+        <h1 class="title is-3"><%= headTitle %></h1>
+
+        <div class="box mb-4">
+          <p class="is-size-5 has-text-weight-semibold mb-2">Copiers to display</p>
+          <p class="has-text-grey mb-4">
+            Default selection is the 10 most used copiers in the last 60 days.
+          </p>
+
+          <div id="copierSelection" class="columns is-multiline">
+            <% for (const copier of dashboardData.copiers) { %>
+              <div class="column is-half-tablet is-one-third-desktop">
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    class="js-copier-checkbox"
+                    value="<%= copier.copierId %>"
+                    <% if (dashboardData.defaultCopierIds.includes(copier.copierId)) { %>checked<% } %>
+                  />
+                  <span class="ml-2"><%= copier.copierName %></span>
+                </label>
+              </div>
+            <% } %>
+          </div>
+        </div>
+
+        <div class="box mb-4">
+          <div id="copierUsageChart" style="height: 420px"></div>
+        </div>
+
+        <div class="columns is-multiline">
+          <div class="column is-half">
+            <div class="box has-background-success-light">
+              <p class="heading">Most Used Copier (Last 60 Days)</p>
+              <% if (dashboardData.kpis.mostUsedCopier === null) { %>
+                <p class="title is-5">No data</p>
+              <% } else { %>
+                <p class="title is-4"><%= dashboardData.kpis.mostUsedCopier.copierName %></p>
+                <p class="is-size-5">
+                  <span class="icon mr-1"><i class="fa-solid fa-file-lines"></i></span>
+                  <span>
+                    <%= dashboardData.kpis.mostUsedCopier.totalPrints.toLocaleString() %> prints
+                  </span>
+                </p>
+              <% } %>
+            </div>
+          </div>
+
+          <div class="column is-half">
+            <div class="box has-background-warning-light">
+              <p class="heading">Least Used Copier (Last 60 Days)</p>
+              <% if (dashboardData.kpis.leastUsedCopier === null) { %>
+                <p class="title is-5">No data</p>
+              <% } else { %>
+                <p class="title is-4"><%= dashboardData.kpis.leastUsedCopier.copierName %></p>
+                <p class="is-size-5">
+                  <span class="icon mr-1"><i class="fa-solid fa-file-lines"></i></span>
+                  <span>
+                    <%= dashboardData.kpis.leastUsedCopier.totalPrints.toLocaleString() %> prints
+                  </span>
+                </p>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script id="dashboardData" type="application/json"><%- dashboardDataJson %></script>
+
     <script src="<%= urlPrefix %>/lib/echarts/echarts.js"></script>
     <script src="<%= urlPrefix %>/javascripts/dashboard.js"></script>
-
     <script src="<%= urlPrefix %>/lib/fa/js/all.min.js" defer></script>
   </body>
-
 </html>
