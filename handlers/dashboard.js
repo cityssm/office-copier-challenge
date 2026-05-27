@@ -45,8 +45,6 @@ function normalizeToLocalDay(timeMillis) {
     return date.getTime();
 }
 const CANADIAN_HOLIDAY_DATES = [
-    // Tuple format: [year, zeroIndexedMonth, dayOfMonth]
-    // Keep this list aligned with the years covered by dashboard data.
     [2026, 0, 1],
     [2026, 1, 16],
     [2026, 3, 3],
@@ -78,7 +76,8 @@ function getCanadianHolidayDayStartMillis(startMillis, endMillis) {
     const holidayDays = new Set();
     for (const [year, month, day] of CANADIAN_HOLIDAY_DATES) {
         const holidayDayStartMillis = normalizeToLocalDay(new Date(year, month, day).getTime());
-        if (holidayDayStartMillis >= startMillis && holidayDayStartMillis < endMillis) {
+        if (holidayDayStartMillis >= startMillis &&
+            holidayDayStartMillis < endMillis) {
             holidayDays.add(holidayDayStartMillis);
         }
     }
@@ -142,8 +141,7 @@ export default function handler(_request, response) {
         : durationOptions.length > 0
             ? durationOptions[0].days
             : MAX_DAYS;
-    const defaultDurationLabel = durationOptions.find((durationOption) => durationOption.days === defaultDurationDays)
-        ?.label ?? 'Past 60 Days';
+    const defaultDurationLabel = durationOptions.find((durationOption) => durationOption.days === defaultDurationDays)?.label ?? 'Past 60 Days';
     const defaultCopierIds = sortedByMostUsed
         .slice(0, DEFAULT_COPIER_COUNT)
         .map((copier) => copier.copierId);

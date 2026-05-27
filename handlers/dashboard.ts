@@ -44,7 +44,9 @@ interface DashboardCopierData {
   totalPrints: number
 }
 
-function getHourlyMaximumValues(hourlyCounts: DashboardPoint[]): DashboardPoint[] {
+function getHourlyMaximumValues(
+  hourlyCounts: DashboardPoint[]
+): DashboardPoint[] {
   const maximumCountByHour = new Map<number, number>()
 
   for (const hourlyCount of hourlyCounts) {
@@ -118,7 +120,10 @@ function getCanadianHolidayDayStartMillis(
       new Date(year, month, day).getTime()
     )
 
-    if (holidayDayStartMillis >= startMillis && holidayDayStartMillis < endMillis) {
+    if (
+      holidayDayStartMillis >= startMillis &&
+      holidayDayStartMillis < endMillis
+    ) {
       holidayDays.add(holidayDayStartMillis)
     }
   }
@@ -210,8 +215,9 @@ export default function handler(_request: Request, response: Response): void {
       : MAX_DAYS
 
   const defaultDurationLabel =
-    durationOptions.find((durationOption) => durationOption.days === defaultDurationDays)
-      ?.label ?? 'Past 60 Days'
+    durationOptions.find(
+      (durationOption) => durationOption.days === defaultDurationDays
+    )?.label ?? 'Past 60 Days'
 
   const defaultCopierIds = sortedByMostUsed
     .slice(0, DEFAULT_COPIER_COUNT)
