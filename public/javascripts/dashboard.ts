@@ -87,7 +87,7 @@ function formatHourAmPm(date: Date): string {
   const hours = date.getHours()
   const ampm = hours < 12 ? 'am' : 'pm'
   const hour12 = hours % 12 === 0 ? 12 : hours % 12
-  return `${hour12}${ampm}`
+  return `${hour12} ${ampm}`
 }
 
 ;(() => {

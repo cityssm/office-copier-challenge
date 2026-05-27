@@ -135,7 +135,7 @@ export default function handler(_request: Request, response: Response): void {
     if (durationPreset.days === 30 || durationPreset.days === 60) {
       return hourlyMaximums.some(
         (hourlyMaximum) =>
-          hourlyMaximum.hourStartMillis <
+          hourlyMaximum.hourStartMillis <=
           nowMillis - durationPreset.days * DAY_MILLIS
       )
     }

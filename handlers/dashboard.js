@@ -87,7 +87,7 @@ export default function handler(_request, response) {
     const nowMillis = Date.now();
     const durationOptions = DURATION_PRESETS.filter((durationPreset) => {
         if (durationPreset.days === 30 || durationPreset.days === 60) {
-            return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis <
+            return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis <=
                 nowMillis - durationPreset.days * DAY_MILLIS);
         }
         return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis >=
