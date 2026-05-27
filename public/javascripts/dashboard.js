@@ -56,6 +56,13 @@ function formatHourAmPm(date) {
     const hour12 = hours % 12 === 0 ? 12 : hours % 12;
     return `${hour12} ${ampm}`;
 }
+function formatTooltipDateTime(date) {
+    return `${date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    })} ${formatHourAmPm(date)}`;
+}
 function clampRange(rangeStartMillis, rangeEndMillis, minMillis, maxMillis) {
     const clampedStartMillis = Math.max(rangeStartMillis, minMillis);
     const clampedEndMillis = Math.min(rangeEndMillis, maxMillis);
@@ -160,7 +167,16 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
         chart.setOption({
             animation: false,
             tooltip: {
-                trigger: 'axis'
+                trigger: 'axis',
+                formatter: (tooltipItems) => {
+                    const timeHeader = useDailyCounts
+                        ? new Date(tooltipItems[0].axisValue).toLocaleDateString()
+                        : formatTooltipDateTime(new Date(tooltipItems[0].axisValue));
+                    return [
+                        timeHeader,
+                        ...tooltipItems.map((point) => `${point.marker} ${point.seriesName}: ${point.value[1]}`)
+                    ].join('<br/>');
+                }
             },
             legend: {
                 type: 'scroll'
@@ -170,9 +186,7 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
                 axisLabel: useDailyCounts
                     ? {}
                     : {
-                        formatter: (value) => {
-                            return formatHourAmPm(new Date(value));
-                        }
+                        formatter: (value) => formatHourAmPm(new Date(value))
                     }
             },
             yAxis: {
