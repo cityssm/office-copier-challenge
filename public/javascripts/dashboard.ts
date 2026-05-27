@@ -3,6 +3,7 @@ import type { EChartsType } from 'echarts/types/dist/echarts'
 const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
 const DEFAULT_SELECTED_COPIER_COUNT = 9
+const LOW_PRINT_THRESHOLD = 5
 
 interface DashboardPoint {
   timeMillis: number
@@ -357,7 +358,7 @@ function computeKpisForRange(
       const isConsecutive =
         index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
 
-      if (prints < 5) {
+      if (prints < LOW_PRINT_THRESHOLD) {
         currentRun = isConsecutive && currentRun > 0 ? currentRun + 1 : 1
       } else {
         currentRun = 0
