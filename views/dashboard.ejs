@@ -167,6 +167,55 @@
           <div id="copierUsageChart" style="height: 420px"></div>
         </div>
 
+        <div class="box mb-4" id="kpiSection">
+          <div class="columns">
+            <div class="column">
+              <p class="is-size-6 has-text-weight-semibold mb-3">
+                <span class="icon has-text-danger">
+                  <i class="fa-solid fa-fire" aria-hidden="true"></i>
+                </span>
+                Heaviest Copy Times
+              </p>
+              <p class="mb-3">
+                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Busiest hour (all copiers)</span><br />
+                <span id="kpiBusiestHour">Loading&hellip;</span>
+              </p>
+              <p>
+                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Busiest copier &amp; hour</span><br />
+                <span id="kpiBusiestCopierHour">Loading&hellip;</span>
+              </p>
+            </div>
+            <div class="column">
+              <p class="is-size-6 has-text-weight-semibold mb-3">
+                <span class="icon has-text-warning">
+                  <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+                </span>
+                Heaviest Usage
+              </p>
+              <p class="mb-3">
+                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Most consecutive hours as top copier</span><br />
+                <span id="kpiTopCopierStreak">Loading&hellip;</span>
+              </p>
+              <p>
+                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Most consecutive hours with copies &gt; 0</span><br />
+                <span id="kpiActiveStreak">Loading&hellip;</span>
+              </p>
+            </div>
+            <div class="column">
+              <p class="is-size-6 has-text-weight-semibold mb-3">
+                <span class="icon has-text-success">
+                  <i class="fa-solid fa-leaf" aria-hidden="true"></i>
+                </span>
+                Eco Champions
+              </p>
+              <p>
+                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Most consecutive hours with fewer than 5 copies</span><br />
+                <span id="kpiLowPrintStreak">Loading&hellip;</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div class="box has-text-centered mb-4">
           <a href="#" id="aboutLink">About this Challenge</a>
           <span class="mx-2">&middot;</span>
