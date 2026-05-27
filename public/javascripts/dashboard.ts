@@ -26,6 +26,10 @@ function normalizeToHour(timeMillis: number): number {
   return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS
 }
 
+function normalizeToDay(timeMillis: number): number {
+  return Math.floor(timeMillis / DAY_MILLIS) * DAY_MILLIS
+}
+
 function buildHourlyDeltaSeries(
   hourlyCounts: DashboardPoint[]
 ): Array<[timeMillis: number, hourlyPrints: number]> {
@@ -62,6 +66,28 @@ function buildHourlyDeltaSeries(
   }
 
   return deltaSeries
+}
+
+function buildDailyDeltaSeries(
+  hourlyCounts: DashboardPoint[]
+): Array<[timeMillis: number, dailyPrints: number]> {
+  const hourlyDeltas = buildHourlyDeltaSeries(hourlyCounts)
+
+  const dailyPrints = new Map<number, number>()
+
+  for (const [timeMillis, prints] of hourlyDeltas) {
+    const dayStartMillis = normalizeToDay(timeMillis)
+    dailyPrints.set(dayStartMillis, (dailyPrints.get(dayStartMillis) ?? 0) + prints)
+  }
+
+  return [...dailyPrints.entries()].toSorted(([dayA], [dayB]) => dayA - dayB)
+}
+
+function formatHourAmPm(date: Date): string {
+  const hours = date.getHours()
+  const ampm = hours < 12 ? 'am' : 'pm'
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12
+  return `${hour12} ${ampm}`
 }
 
 ;(() => {
@@ -106,6 +132,8 @@ function buildHourlyDeltaSeries(
     const cutoffMillis =
       Date.now() - (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS
 
+    const useDailyCounts = selectedDurationDays === 30 || selectedDurationDays === 60
+
     const selectedCopierIds = [
       ...document.querySelectorAll<HTMLInputElement>('.js-copier-checkbox:checked')
     ].map((checkboxElement) => Number(checkboxElement.value))
@@ -125,19 +153,30 @@ function buildHourlyDeltaSeries(
         type: 'scroll'
       },
       xAxis: {
-        type: 'time'
+        type: 'time',
+        axisLabel: useDailyCounts
+          ? {}
+          : {
+              formatter: (value: number) => {
+                return formatHourAmPm(new Date(value))
+              }
+            }
       },
       yAxis: {
         type: 'value',
-        name: 'Hourly Prints'
+        name: useDailyCounts ? 'Daily Prints' : 'Hourly Prints'
       },
       series: selectedCopiers.map((copier) => ({
         name: copier.copierName,
         type: 'line',
         showSymbol: false,
-        data: buildHourlyDeltaSeries(copier.hourlyCounts).filter(
-          ([timeMillis]) => timeMillis >= cutoffMillis
-        )
+        data: useDailyCounts
+          ? buildDailyDeltaSeries(copier.hourlyCounts).filter(
+              ([timeMillis]) => timeMillis >= cutoffMillis
+            )
+          : buildHourlyDeltaSeries(copier.hourlyCounts).filter(
+              ([timeMillis]) => timeMillis >= cutoffMillis
+            )
       }))
     })
   }
@@ -193,6 +232,28 @@ function buildHourlyDeltaSeries(
     updateHiddenCopiersButton()
     updateCopierVisibility()
   })
+
+  const tipsModalElement = document.querySelector('#tipsModal')
+  const tipsModalCloseElements = document.querySelectorAll('.js-tips-modal-close')
+
+  if (tipsModalElement instanceof HTMLDivElement) {
+    const openTipsModal = (): void => {
+      tipsModalElement.classList.add('is-active')
+    }
+
+    const closeTipsModal = (): void => {
+      tipsModalElement.classList.remove('is-active')
+    }
+
+    document.querySelector('#tipsLink')?.addEventListener('click', (event) => {
+      event.preventDefault()
+      openTipsModal()
+    })
+
+    for (const closeElement of tipsModalCloseElements) {
+      closeElement.addEventListener('click', closeTipsModal)
+    }
+  }
 
   updateHiddenCopiersButton()
   updateChart()

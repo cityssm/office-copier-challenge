@@ -109,8 +109,77 @@
           <div id="copierUsageChart" style="height: 420px"></div>
         </div>
 
+        <div class="box has-text-centered mb-4">
+          <a href="#" id="tipsLink">Tips to Reduce your Prints</a>
+        </div>
+
       </div>
     </section>
+
+    <div id="tipsModal" class="modal">
+      <div class="modal-background js-tips-modal-close"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">Tips to Reduce your Prints</p>
+          <button class="delete js-tips-modal-close" aria-label="close" type="button"></button>
+        </header>
+        <section class="modal-card-body">
+          <ul class="fa-ul">
+            <li class="mb-2">
+              <span class="fa-li">
+                <i class="fa-solid fa-leaf"></i>
+              </span>
+              Print double-sided (duplex) to cut paper use in half.
+            </li>
+            <li class="mb-2">
+              <span class="fa-li">
+                <i class="fa-solid fa-leaf"></i>
+              </span>
+              Preview documents before printing to avoid reprints.
+            </li>
+            <li class="mb-2">
+              <span class="fa-li">
+                <i class="fa-solid fa-leaf"></i>
+              </span>
+              Use "Print Selection" or "Print to PDF" instead of printing the full document.
+            </li>
+            <li class="mb-2">
+              <span class="fa-li">
+                <i class="fa-solid fa-leaf"></i>
+              </span>
+              Share documents digitally via email or shared drives instead of printing copies.
+            </li>
+            <li class="mb-2">
+              <span class="fa-li">
+                <i class="fa-solid fa-leaf"></i>
+              </span>
+              Use smaller font sizes and reduced margins to fit more content per page.
+            </li>
+            <li class="mb-2">
+              <span class="fa-li">
+                <i class="fa-solid fa-leaf"></i>
+              </span>
+              Cancel unnecessary print jobs before they complete.
+            </li>
+            <li class="mb-2">
+              <span class="fa-li">
+                <i class="fa-solid fa-leaf"></i>
+              </span>
+              Proofread on-screen before printing to reduce error reprints.
+            </li>
+            <li>
+              <span class="fa-li">
+                <i class="fa-solid fa-leaf"></i>
+              </span>
+              Use draft or economy print quality for internal documents.
+            </li>
+          </ul>
+        </section>
+        <footer class="modal-card-foot is-justify-content-end">
+          <button class="button js-tips-modal-close" type="button">Close</button>
+        </footer>
+      </div>
+    </div>
 
     <script id="dashboardData" type="application/json"><%- dashboardDataJson %></script>
 
