@@ -110,11 +110,12 @@
                   />
                   <span class="icon ml-2 mr-2" title="<%= copierTierLabel %>">
                     <span class="fa-layers fa-fw <%= copierTierIconConfig.iconClass %>">
-                      <i class="fa-solid fa-file" aria-hidden="true"></i>
+                      <i class="fa-solid fa-file" data-fa-glow="10" aria-hidden="true"></i>
                       <% for (const iconTransform of copierTierIconConfig.transforms) { %>
                         <i
                           class="fa-solid fa-file"
                           data-fa-transform="<%= iconTransform %>"
+                          data-fa-glow="10"
                           aria-hidden="true"
                         ></i>
                       <% } %>
