@@ -79,14 +79,17 @@
                   : copierIndex < middleBandEndIndex
                     ? 'Medium usage'
                     : 'Low usage' %>
-              <% let copierTierIconClass = 'has-text-success' %>
-              <% let copierTierIconCount = 1 %>
+              <% const copierTierIconTransforms = ['up-2 left-2 shrink-1', 'up-4 left-4 shrink-2'] %>
+              <% const copierTierIconConfig = {
+                iconClass: 'has-text-success',
+                transforms: []
+              } %>
               <% if (copierIndex < topBandEndIndex) { %>
-                <% copierTierIconClass = 'has-text-danger' %>
-                <% copierTierIconCount = 3 %>
+                <% copierTierIconConfig.iconClass = 'has-text-danger' %>
+                <% copierTierIconConfig.transforms = copierTierIconTransforms %>
               <% } else if (copierIndex < middleBandEndIndex) { %>
-                <% copierTierIconClass = 'has-text-warning' %>
-                <% copierTierIconCount = 2 %>
+                <% copierTierIconConfig.iconClass = 'has-text-warning' %>
+                <% copierTierIconConfig.transforms = [copierTierIconTransforms[0]] %>
               <% } %>
               <div class="column is-half-tablet is-one-third-desktop js-copier-option">
                 <label class="checkbox is-block p-2 <%= copierBandClass %>">
@@ -96,19 +99,12 @@
                     value="<%= copier.copierId %>"
                   />
                   <span class="icon ml-2 mr-2" title="<%= copierTierLabel %>">
-                    <span class="fa-layers fa-fw <%= copierTierIconClass %>">
+                    <span class="fa-layers fa-fw <%= copierTierIconConfig.iconClass %>">
                       <i class="fa-solid fa-file" aria-hidden="true"></i>
-                      <% if (copierTierIconCount >= 2) { %>
+                      <% for (const iconTransform of copierTierIconConfig.transforms) { %>
                         <i
                           class="fa-solid fa-file"
-                          data-fa-transform="up-2 left-2 shrink-1"
-                          aria-hidden="true"
-                        ></i>
-                      <% } %>
-                      <% if (copierTierIconCount >= 3) { %>
-                        <i
-                          class="fa-solid fa-file"
-                          data-fa-transform="up-4 left-4 shrink-2"
+                          data-fa-transform="<%= iconTransform %>"
                           aria-hidden="true"
                         ></i>
                       <% } %>
