@@ -1,6 +1,6 @@
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
-const DEFAULT_COPIER_COUNT = 9;
+const DEFAULT_SELECTED_COPIER_COUNT = 9;
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
@@ -240,7 +240,7 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts, holidayDa
             }
             return copierA.copierName.localeCompare(copierB.copierName);
         })
-            .slice(0, DEFAULT_COPIER_COUNT)
+            .slice(0, DEFAULT_SELECTED_COPIER_COUNT)
             .map((copier) => copier.copierId));
         for (const checkboxElement of checkboxElements) {
             checkboxElement.checked = selectedCopierIds.has(Number(checkboxElement.value));
@@ -275,7 +275,7 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts, holidayDa
     });
     if (copierFilterElement instanceof HTMLInputElement) {
         copierFilterElement.addEventListener('input', () => {
-            copierNameFilterText = copierFilterElement.value.trim().toLocaleLowerCase();
+            copierNameFilterText = copierFilterElement.value.trim().toLowerCase();
             updateCopierVisibility();
         });
     }
@@ -317,12 +317,6 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts, holidayDa
         });
         for (const closeElement of tipsModalCloseElements) {
             closeElement.addEventListener('click', closeTipsModal);
-        }
-    }
-    if (dashboardData.defaultCopierIds.length > 0) {
-        const selectedDefaultCopierIds = new Set(dashboardData.defaultCopierIds);
-        for (const checkboxElement of checkboxElements) {
-            checkboxElement.checked = selectedDefaultCopierIds.has(Number(checkboxElement.value));
         }
     }
     updateCopierCheckboxesForDuration();
