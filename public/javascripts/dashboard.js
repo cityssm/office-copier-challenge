@@ -1,5 +1,6 @@
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
+const DEFAULT_SELECTED_COPIER_COUNT = 9;
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
@@ -69,16 +70,18 @@ function clampRange(rangeStartMillis, rangeEndMillis, minMillis, maxMillis) {
         ? [clampedStartMillis, clampedEndMillis]
         : undefined;
 }
-function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
+function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts, holidayDayStartMillis) {
     if (endMillis <= startMillis) {
         return [];
     }
     const shadedRanges = [];
+    const holidayDayStartSet = new Set(holidayDayStartMillis);
     for (let dayStartMillis = normalizeToLocalDay(startMillis); dayStartMillis < endMillis; dayStartMillis = addLocalDay(dayStartMillis)) {
         const dayEndMillis = addLocalDay(dayStartMillis);
         const dayOfWeek = new Date(dayStartMillis).getDay();
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        if (isWeekend) {
+        const isHoliday = holidayDayStartSet.has(dayStartMillis);
+        if (isWeekend || isHoliday) {
             const weekendRange = clampRange(dayStartMillis, dayEndMillis, startMillis, endMillis);
             if (weekendRange !== undefined) {
                 shadedRanges.push([
@@ -132,7 +135,7 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
         const cutoffMillis = nowMillis -
             (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS;
         const useDailyCounts = selectedDurationDays === 30 || selectedDurationDays === 60;
-        const shadedTimeRanges = buildShadedTimeRanges(cutoffMillis, nowMillis, useDailyCounts);
+        const shadedTimeRanges = buildShadedTimeRanges(cutoffMillis, nowMillis, useDailyCounts, dashboardData.holidayDayStartMillis);
         const selectedCopierIds = [
             ...document.querySelectorAll('.js-copier-checkbox:checked')
         ].map((checkboxElement) => Number(checkboxElement.value));
@@ -196,7 +199,53 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
         });
     };
     const checkboxElements = document.querySelectorAll('.js-copier-checkbox');
+    const copierFilterElement = document.querySelector('#copierNameFilter');
+    const copierOptionElements = document.querySelectorAll('.js-copier-option');
     let showHiddenCopiers = false;
+    let copierNameFilterText = '';
+    const getDurationRange = () => {
+        const selectedDurationDays = Number(chartDurationDaysElement.value);
+        const nowMillis = Date.now();
+        return {
+            cutoffMillis: nowMillis -
+                (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) *
+                    DAY_MILLIS
+        };
+    };
+    const getPrintCountInRange = (copier, cutoffMillis) => {
+        return buildHourlyDeltaSeries(copier.hourlyCounts)
+            .filter(([timeMillis]) => timeMillis >= cutoffMillis)
+            .reduce((total, [, printCount]) => total + printCount, 0);
+    };
+    const updateCopierCheckboxesForDuration = () => {
+        const { cutoffMillis } = getDurationRange();
+        const copierCounts = dashboardData.copiers.map((copier) => ({
+            copierId: copier.copierId,
+            copierName: copier.copierName,
+            printCount: getPrintCountInRange(copier, cutoffMillis)
+        }));
+        for (const copierCount of copierCounts) {
+            const checkboxElement = document.querySelector(`.js-copier-checkbox[value="${copierCount.copierId}"]`);
+            const countElement = checkboxElement
+                ?.closest('.js-copier-option')
+                ?.querySelector('.js-copier-count');
+            if (countElement instanceof HTMLSpanElement) {
+                countElement.textContent = copierCount.printCount.toLocaleString();
+            }
+        }
+        const selectedCopierIds = new Set(copierCounts
+            .toSorted((copierA, copierB) => {
+            if (copierB.printCount !== copierA.printCount) {
+                return copierB.printCount - copierA.printCount;
+            }
+            return copierA.copierName.localeCompare(copierB.copierName);
+        })
+            .slice(0, DEFAULT_SELECTED_COPIER_COUNT)
+            .map((copier) => copier.copierId));
+        for (const checkboxElement of checkboxElements) {
+            checkboxElement.checked = selectedCopierIds.has(Number(checkboxElement.value));
+        }
+    };
     const updateHiddenCopiersButton = () => {
         toggleHiddenCopiersElement.textContent = showHiddenCopiers
             ? 'Hide hidden copiers'
@@ -204,16 +253,15 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
         toggleHiddenCopiersElement.setAttribute('aria-pressed', showHiddenCopiers ? 'true' : 'false');
     };
     const updateCopierVisibility = () => {
-        for (const checkboxElement of checkboxElements) {
-            const copierOptionElement = checkboxElement.closest('.js-copier-option');
-            if (!(copierOptionElement instanceof HTMLDivElement)) {
-                continue;
-            }
-            copierOptionElement.classList.toggle('is-hidden', !showHiddenCopiers && !checkboxElement.checked);
+        for (const copierOptionElement of copierOptionElements) {
+            const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox');
+            const copierName = copierOptionElement.dataset.copierName ?? '';
+            const matchesFilter = copierName.includes(copierNameFilterText);
+            const isSelected = checkboxElement instanceof HTMLInputElement && checkboxElement.checked;
+            copierOptionElement.classList.toggle('is-hidden', !matchesFilter || (!showHiddenCopiers && !isSelected));
         }
     };
     for (const checkboxElement of checkboxElements) {
-        checkboxElement.checked = dashboardData.defaultCopierIds.includes(Number(checkboxElement.value));
         checkboxElement.addEventListener('change', () => {
             updateChart();
             updateCopierVisibility();
@@ -221,8 +269,16 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
     }
     chartDurationDaysElement.value = String(dashboardData.defaultDurationDays);
     chartDurationDaysElement.addEventListener('change', () => {
+        updateCopierCheckboxesForDuration();
         updateChart();
+        updateCopierVisibility();
     });
+    if (copierFilterElement instanceof HTMLInputElement) {
+        copierFilterElement.addEventListener('input', () => {
+            copierNameFilterText = copierFilterElement.value.trim().toLowerCase();
+            updateCopierVisibility();
+        });
+    }
     toggleHiddenCopiersElement.addEventListener('click', () => {
         showHiddenCopiers = !showHiddenCopiers;
         updateHiddenCopiersButton();
@@ -263,6 +319,7 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
             closeElement.addEventListener('click', closeTipsModal);
         }
     }
+    updateCopierCheckboxesForDuration();
     updateHiddenCopiersButton();
     updateChart();
     updateCopierVisibility();
