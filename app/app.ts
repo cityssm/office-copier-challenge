@@ -84,6 +84,10 @@ app
     `${urlPrefix}/lib/fa`,
     express.static('node_modules/@fortawesome/fontawesome-free')
   )
+  .use(
+    `${urlPrefix}/lib/cityssm-fa-glow`,
+    express.static('node_modules/@cityssm/fa-glow')
+  )
 
 /*
  * Locals

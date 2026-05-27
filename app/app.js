@@ -37,7 +37,8 @@ app
     .use(urlPrefix, express.static('public'))
     .use(`${urlPrefix}/lib/bulma`, express.static('node_modules/bulma/css'))
     .use(`${urlPrefix}/lib/echarts`, express.static('node_modules/echarts/dist'))
-    .use(`${urlPrefix}/lib/fa`, express.static('node_modules/@fortawesome/fontawesome-free'));
+    .use(`${urlPrefix}/lib/fa`, express.static('node_modules/@fortawesome/fontawesome-free'))
+    .use(`${urlPrefix}/lib/cityssm-fa-glow`, express.static('node_modules/@cityssm/fa-glow'));
 app.use((request, response, next) => {
     response.locals.buildNumber = version;
     response.locals.configFunctions = configFunctions;
