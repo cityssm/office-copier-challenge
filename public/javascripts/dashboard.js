@@ -146,6 +146,24 @@ function formatHourAmPm(date) {
         updateHiddenCopiersButton();
         updateCopierVisibility();
     });
+    const aboutModalElement = document.querySelector('#aboutModal');
+    const aboutModalCloseElements = document.querySelectorAll('.js-about-modal-close');
+    if (aboutModalElement instanceof HTMLDivElement) {
+        const openAboutModal = () => {
+            aboutModalElement.classList.add('is-active');
+        };
+        const closeAboutModal = () => {
+            aboutModalElement.classList.remove('is-active');
+        };
+        document.querySelector('#aboutLink')?.addEventListener('click', (event) => {
+            event.preventDefault();
+            openAboutModal();
+        });
+        for (const closeElement of aboutModalCloseElements) {
+            closeElement.addEventListener('click', closeAboutModal);
+        }
+        openAboutModal();
+    }
     const tipsModalElement = document.querySelector('#tipsModal');
     const tipsModalCloseElements = document.querySelectorAll('.js-tips-modal-close');
     if (tipsModalElement instanceof HTMLDivElement) {

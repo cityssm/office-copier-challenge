@@ -110,11 +110,34 @@
         </div>
 
         <div class="box has-text-centered mb-4">
+          <a href="#" id="aboutLink">About</a>
+          <span class="mx-2">&middot;</span>
           <a href="#" id="tipsLink">Tips to Reduce your Prints</a>
         </div>
 
       </div>
     </section>
+
+    <div id="aboutModal" class="modal">
+      <div class="modal-background js-about-modal-close"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">About</p>
+          <button class="delete js-about-modal-close" aria-label="close" type="button"></button>
+        </header>
+        <section class="modal-card-body">
+          <p class="mb-3">
+            The Office Copier Challenge helps staff monitor copier usage and reduce paper waste.
+          </p>
+          <p>
+            Use the dashboard to compare printing trends and identify opportunities to print less.
+          </p>
+        </section>
+        <footer class="modal-card-foot is-justify-content-end">
+          <button class="button js-about-modal-close" type="button">Close</button>
+        </footer>
+      </div>
+    </div>
 
     <div id="tipsModal" class="modal">
       <div class="modal-background js-tips-modal-close"></div>
