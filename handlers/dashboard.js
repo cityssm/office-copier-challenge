@@ -44,104 +44,41 @@ function normalizeToLocalDay(timeMillis) {
     date.setHours(0, 0, 0, 0);
     return date.getTime();
 }
-function addLocalDays(date, dayCount) {
-    const newDate = new Date(date);
-    newDate.setDate(newDate.getDate() + dayCount);
-    return newDate;
-}
-function getNthWeekdayOfMonth(year, month, weekday, occurrence) {
-    const date = new Date(year, month, 1);
-    while (date.getDay() !== weekday) {
-        date.setDate(date.getDate() + 1);
-    }
-    date.setDate(date.getDate() + (occurrence - 1) * 7);
-    return date;
-}
-function getLastWeekdayOfMonth(year, month, weekday) {
-    const date = new Date(year, month + 1, 0);
-    while (date.getDay() !== weekday) {
-        date.setDate(date.getDate() - 1);
-    }
-    return date;
-}
-function getEasterSunday(year) {
-    const a = year % 19;
-    const b = Math.floor(year / 100);
-    const c = year % 100;
-    const d = Math.floor(b / 4);
-    const e = b % 4;
-    const f = Math.floor((b + 8) / 25);
-    const g = Math.floor((b - f + 1) / 3);
-    const h = (19 * a + b - d - g + 15) % 30;
-    const i = Math.floor(c / 4);
-    const k = c % 4;
-    const l = (32 + 2 * e + 2 * i - h - k) % 7;
-    const m = Math.floor((a + 11 * h + 22 * l) / 451);
-    const month = Math.floor((h + l - 7 * m + 114) / 31);
-    const day = ((h + l - 7 * m + 114) % 31) + 1;
-    return new Date(year, month - 1, day);
-}
-function getObservedHolidayDate(date) {
-    if (date.getDay() === 6) {
-        return addLocalDays(date, 2);
-    }
-    if (date.getDay() === 0) {
-        return addLocalDays(date, 1);
-    }
-    return date;
-}
-const CANADIAN_HOLIDAYS = [
-    {
-        getDate: (year) => getObservedHolidayDate(new Date(year, 0, 1))
-    },
-    {
-        getDate: (year) => getNthWeekdayOfMonth(year, 1, 1, 3)
-    },
-    {
-        getDate: (year) => addLocalDays(getEasterSunday(year), -2)
-    },
-    {
-        getDate: (year) => getLastWeekdayOfMonth(year, 4, 1)
-    },
-    {
-        getDate: (year) => getObservedHolidayDate(new Date(year, 6, 1))
-    },
-    {
-        getDate: (year) => getNthWeekdayOfMonth(year, 7, 1, 1)
-    },
-    {
-        getDate: (year) => getNthWeekdayOfMonth(year, 8, 1, 1)
-    },
-    {
-        getDate: (year) => getObservedHolidayDate(new Date(year, 8, 30))
-    },
-    {
-        getDate: (year) => getNthWeekdayOfMonth(year, 9, 1, 2)
-    },
-    {
-        getDate: (year) => getObservedHolidayDate(new Date(year, 10, 11))
-    },
-    {
-        getDate: (year) => getObservedHolidayDate(new Date(year, 11, 25))
-    },
-    {
-        getDate: (year) => getObservedHolidayDate(new Date(year, 11, 26))
-    }
+const CANADIAN_HOLIDAY_DATES = [
+    [2026, 0, 1],
+    [2026, 1, 16],
+    [2026, 3, 3],
+    [2026, 4, 25],
+    [2026, 6, 1],
+    [2026, 7, 3],
+    [2026, 8, 7],
+    [2026, 8, 30],
+    [2026, 9, 12],
+    [2026, 10, 11],
+    [2026, 11, 25],
+    [2026, 11, 28],
+    [2027, 0, 1],
+    [2027, 1, 15],
+    [2027, 2, 26],
+    [2027, 4, 31],
+    [2027, 6, 1],
+    [2027, 7, 2],
+    [2027, 8, 6],
+    [2027, 8, 30],
+    [2027, 9, 11],
+    [2027, 10, 11],
+    [2027, 11, 27],
+    [2027, 11, 27]
 ];
 function getCanadianHolidayDayStartMillis(startMillis, endMillis) {
     if (endMillis <= startMillis) {
         return [];
     }
     const holidayDays = new Set();
-    const startYear = new Date(startMillis).getFullYear();
-    const endYear = new Date(endMillis).getFullYear();
-    for (let year = startYear; year <= endYear; year += 1) {
-        for (const holiday of CANADIAN_HOLIDAYS) {
-            const holidayDayStartMillis = normalizeToLocalDay(holiday.getDate(year).getTime());
-            if (holidayDayStartMillis >= startMillis &&
-                holidayDayStartMillis < endMillis) {
-                holidayDays.add(holidayDayStartMillis);
-            }
+    for (const [year, month, day] of CANADIAN_HOLIDAY_DATES) {
+        const holidayDayStartMillis = normalizeToLocalDay(new Date(year, month, day).getTime());
+        if (holidayDayStartMillis >= startMillis && holidayDayStartMillis < endMillis) {
+            holidayDays.add(holidayDayStartMillis);
         }
     }
     return [...holidayDays].toSorted((dayA, dayB) => dayA - dayB);
