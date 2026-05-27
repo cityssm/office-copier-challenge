@@ -2,3 +2,26 @@ html {
   background: url('../images/agawaCanyon.jpg') no-repeat center center fixed;
   background-size: cover;
 }
+
+.copier-tier-icon-stack {
+  position: relative;
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.15rem;
+}
+
+.copier-tier-icon {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.copier-tier-icon:nth-of-type(2) {
+  left: -0.2rem;
+  top: -0.15rem;
+}
+
+.copier-tier-icon:nth-of-type(3) {
+  left: -0.4rem;
+  top: -0.3rem;
+}
