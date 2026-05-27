@@ -2,3 +2,7 @@ html {
   background: url('../images/agawaCanyon.jpg') no-repeat center center fixed;
   background-size: cover;
 }
+
+.modal-card {
+  max-width: 100%;
+}
