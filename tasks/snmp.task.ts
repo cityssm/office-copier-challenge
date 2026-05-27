@@ -9,6 +9,7 @@ import recordCopierCount from '../database/recordCopierCount.js'
 import { DEBUG_NAMESPACE } from '../debug.config.js'
 import { community, oids } from '../helpers/oid.helpers.js'
 
+// eslint-disable-next-line @typescript-eslint/no-magic-numbers
 const pollingInterval = minutesToMillis(20)
 
 const debug = Debug(`${DEBUG_NAMESPACE}:tasks:snmp`)

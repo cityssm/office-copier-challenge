@@ -22,6 +22,7 @@ let doShutdown = false
 function initializeCluster(): void {
   const directoryName = path.dirname(fileURLToPath(import.meta.url))
 
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
   const processCount = Math.min(4, os.cpus().length * 2)
 
   process.title = 'Office Copier Challenge (Primary)'
