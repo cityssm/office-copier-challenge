@@ -119,6 +119,14 @@ function formatHourAmPm(date: Date): string {
   return `${hour12} ${ampm}`
 }
 
+function formatTooltipDateTime(date: Date): string {
+  return `${date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })} ${formatHourAmPm(date)}`
+}
+
 function clampRange(
   rangeStartMillis: number,
   rangeEndMillis: number,
@@ -294,7 +302,24 @@ function buildShadedTimeRanges(
     chart.setOption({
       animation: false,
       tooltip: {
-        trigger: 'axis'
+        trigger: 'axis',
+        formatter: (tooltipItems: Array<{
+          axisValue: number
+          marker: string
+          seriesName: string
+          value: [number, number]
+        }>) => {
+          const timeHeader = useDailyCounts
+            ? new Date(tooltipItems[0].axisValue).toLocaleDateString()
+            : formatTooltipDateTime(new Date(tooltipItems[0].axisValue))
+
+          return [
+            timeHeader,
+            ...tooltipItems.map(
+              (point) => `${point.marker} ${point.seriesName}: ${point.value[1]}`
+            )
+          ].join('<br/>')
+        }
       },
       legend: {
         type: 'scroll'
@@ -304,9 +329,7 @@ function buildShadedTimeRanges(
         axisLabel: useDailyCounts
           ? {}
           : {
-              formatter: (value: number) => {
-                return formatHourAmPm(new Date(value))
-              }
+              formatter: (value: number) => formatHourAmPm(new Date(value))
             }
       },
       yAxis: {
