@@ -53,6 +53,12 @@ function normalizeToLocalDay(timeMillis: number): number {
   return date.getTime()
 }
 
+function addLocalDay(timeMillis: number): number {
+  const date = new Date(timeMillis)
+  date.setDate(date.getDate() + 1)
+  return date.getTime()
+}
+
 function buildHourlyDeltaSeries(
   hourlyCounts: DashboardPoint[]
 ): Array<[timeMillis: number, hourlyPrints: number]> {
@@ -141,15 +147,9 @@ function buildShadedTimeRanges(
   for (
     let dayStartMillis = normalizeToLocalDay(startMillis);
     dayStartMillis < endMillis;
-    dayStartMillis = (() => {
-      const nextDayDate = new Date(dayStartMillis)
-      nextDayDate.setDate(nextDayDate.getDate() + 1)
-      return nextDayDate.getTime()
-    })()
+    dayStartMillis = addLocalDay(dayStartMillis)
   ) {
-    const dayEndDate = new Date(dayStartMillis)
-    dayEndDate.setDate(dayEndDate.getDate() + 1)
-    const dayEndMillis = dayEndDate.getTime()
+    const dayEndMillis = addLocalDay(dayStartMillis)
     const dayOfWeek = new Date(dayStartMillis).getDay()
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
 

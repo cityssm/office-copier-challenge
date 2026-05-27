@@ -12,6 +12,11 @@ function normalizeToLocalDay(timeMillis) {
     date.setHours(0, 0, 0, 0);
     return date.getTime();
 }
+function addLocalDay(timeMillis) {
+    const date = new Date(timeMillis);
+    date.setDate(date.getDate() + 1);
+    return date.getTime();
+}
 function buildHourlyDeltaSeries(hourlyCounts) {
     const maximumCountByHour = new Map();
     for (const hourlyCount of hourlyCounts) {
@@ -63,14 +68,8 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
         return [];
     }
     const shadedRanges = [];
-    for (let dayStartMillis = normalizeToLocalDay(startMillis); dayStartMillis < endMillis; dayStartMillis = (() => {
-        const nextDayDate = new Date(dayStartMillis);
-        nextDayDate.setDate(nextDayDate.getDate() + 1);
-        return nextDayDate.getTime();
-    })()) {
-        const dayEndDate = new Date(dayStartMillis);
-        dayEndDate.setDate(dayEndDate.getDate() + 1);
-        const dayEndMillis = dayEndDate.getTime();
+    for (let dayStartMillis = normalizeToLocalDay(startMillis); dayStartMillis < endMillis; dayStartMillis = addLocalDay(dayStartMillis)) {
+        const dayEndMillis = addLocalDay(dayStartMillis);
         const dayOfWeek = new Date(dayStartMillis).getDay();
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
         if (isWeekend) {
