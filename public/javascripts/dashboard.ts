@@ -22,6 +22,23 @@ interface DashboardData {
   }>
 }
 
+interface DashboardChartSeries {
+  name: string
+  type: 'line'
+  showSymbol: false
+  data: Array<[number, number]>
+  markArea?: {
+    silent: true
+    tooltip: {
+      show: false
+    }
+    itemStyle: {
+      color: string
+    }
+    data: Array<[{ xAxis: number }, { xAxis: number }]>
+  }
+}
+
 function normalizeToHour(timeMillis: number): number {
   return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS
 }
@@ -233,7 +250,7 @@ function buildShadedTimeRanges(
 
     chart.clear()
 
-    const series = selectedCopiers.map((copier) => ({
+    const series: DashboardChartSeries[] = selectedCopiers.map((copier) => ({
       name: copier.copierName,
       type: 'line',
       showSymbol: false,
