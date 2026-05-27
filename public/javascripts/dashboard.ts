@@ -348,10 +348,12 @@ function computeKpisForRange(
 
   // KPI 3: Most consecutive hours with fewer than 5 copies
   let longestLowRun = 0
+  let longestLowTotal = 0
   let longestLowCopier: string | undefined
 
   for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
     let currentRun = 0
+    let currentLowTotal = 0
 
     for (let index = 0; index < hourlyDeltas.length; index++) {
       const [timeMillis, prints] = hourlyDeltas[index]
@@ -359,13 +361,26 @@ function computeKpisForRange(
         index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
 
       if (prints < LOW_PRINT_THRESHOLD) {
-        currentRun = isConsecutive && currentRun > 0 ? currentRun + 1 : 1
+        if (isConsecutive && currentRun > 0) {
+          currentRun++
+          currentLowTotal += prints
+        } else {
+          currentRun = 1
+          currentLowTotal = prints
+        }
       } else {
         currentRun = 0
+        currentLowTotal = 0
       }
 
-      if (currentRun > longestLowRun) {
+      if (
+        currentRun > longestLowRun ||
+        (currentRun === longestLowRun &&
+          currentRun > 0 &&
+          currentLowTotal < longestLowTotal)
+      ) {
         longestLowRun = currentRun
+        longestLowTotal = currentLowTotal
         longestLowCopier = copier.copierName
       }
     }
