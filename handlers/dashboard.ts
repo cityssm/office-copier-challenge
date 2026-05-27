@@ -2,7 +2,6 @@ import type { Request, Response } from 'express'
 
 import getCopierHourlyMaximums from '../database/getCopierHourlyMaximums.js'
 import getCopiers from '../database/getCopiers.js'
-import { getConfigProperty } from '../helpers/config.helpers.js'
 
 const DEFAULT_COPIER_COUNT = 9
 const HOUR_MILLIS = 60 * 60 * 1000
@@ -175,6 +174,6 @@ export default function handler(_request: Request, response: Response): void {
       String.raw`<\/`
     ),
     durationLabel: defaultDurationLabel,
-    headTitle: getConfigProperty('application.applicationName')
+    headTitle: 'Office Copier Challenge'
   })
 }

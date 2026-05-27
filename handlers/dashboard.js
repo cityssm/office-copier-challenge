@@ -1,6 +1,5 @@
 import getCopierHourlyMaximums from '../database/getCopierHourlyMaximums.js';
 import getCopiers from '../database/getCopiers.js';
-import { getConfigProperty } from '../helpers/config.helpers.js';
 const DEFAULT_COPIER_COUNT = 9;
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
@@ -113,6 +112,6 @@ export default function handler(_request, response) {
         dashboardData,
         dashboardDataJson: JSON.stringify(dashboardData).replaceAll('</', String.raw `<\/`),
         durationLabel: defaultDurationLabel,
-        headTitle: getConfigProperty('application.applicationName')
+        headTitle: 'Office Copier Challenge'
     });
 }

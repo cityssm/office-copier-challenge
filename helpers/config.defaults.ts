@@ -1,5 +1,4 @@
 export const configDefaultValues = {
-  'application.applicationName': 'Office Copier Challenge',
   'application.httpPort': 9000,
 
   'reverseProxy.disableCompression': false,
