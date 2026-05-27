@@ -91,6 +91,7 @@ function pollCopiers(): void {
                 countValue
               })
 
+              // eslint-disable-next-line no-useless-assignment, sonarjs/no-dead-store
               didRecordCurrentValue = true
 
               // If we received a valid response, we can stop waiting for more responses
@@ -98,6 +99,7 @@ function pollCopiers(): void {
             }
           }
 
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           if (!didRecordCurrentValue) {
             recordLastKnownCount(copier, oid)
           }

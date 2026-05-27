@@ -1,3 +1,5 @@
+import type { EChartsType } from 'echarts/types/dist/echarts'
+
 const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
 
@@ -37,6 +39,10 @@ interface DashboardChartSeries {
     }
     data: Array<[{ xAxis: number }, { xAxis: number }]>
   }
+}
+
+declare const echarts: {
+  init: (dom: HTMLElement) => EChartsType
 }
 
 function normalizeToHour(timeMillis: number): number {

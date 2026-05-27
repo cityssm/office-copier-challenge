@@ -1,4 +1,3 @@
-"use strict";
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
 function normalizeToHour(timeMillis) {
