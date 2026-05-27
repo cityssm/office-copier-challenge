@@ -18,53 +18,64 @@
     <section class="section">
       <div class="container is-fluid">
         <div class="box mb-4">
-          <h1 class="is-size-5 has-text-weight-semibold mb-2">Office Copier Challenge</h1>
+          <h1 class="is-size-5 has-text-weight-semibold mb-4">Office Copier Challenge</h1>
 
           <div class="level">
             <div class="level-left">
-              <div class="field mb-4">
-                <label class="label is-small" for="chartDurationDays">Data to display</label>
-                <div class="control">
-                  <div class="select is-small">
-                    <select id="chartDurationDays">
-                      <% if (dashboardData.durationOptions.length === 0) { %>
-                        <option value="<%= dashboardData.defaultDurationDays %>" selected>No data available</option>
-                      <% } else { %>
-                        <% for (const durationOption of dashboardData.durationOptions) { %>
-                          <option
-                            value="<%= durationOption.days %>"
-                            <%= durationOption.days === dashboardData.defaultDurationDays ? 'selected' : '' %>
-                          >
-                            <%= durationOption.label %>
-                          </option>
+              <div class="level-item">
+                <div class="field">
+                  <div class="control has-icons-left">
+                    <div class="select is-small">
+                      <select id="chartDurationDays" aria-label="Select duration of data to display on chart">
+                        <% if (dashboardData.durationOptions.length === 0) { %>
+                          <option value="<%= dashboardData.defaultDurationDays %>" selected>No data available</option>
+                        <% } else { %>
+                          <% for (const durationOption of dashboardData.durationOptions) { %>
+                            <option
+                              value="<%= durationOption.days %>"
+                              <%= durationOption.days === dashboardData.defaultDurationDays ? 'selected' : '' %>
+                            >
+                              <%= durationOption.label %>
+                            </option>
+                          <% } %>
                         <% } %>
-                      <% } %>
-                    </select>
+                      </select>
+                    </div>
+                    <span class="icon is-small is-left">
+                      <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+                    </span>
                   </div>
-                </div>
-              </div>
-              <div class="field mb-4 ml-3">
-                <label class="label is-small" for="copierNameFilter">Filter copiers</label>
-                <div class="control">
-                  <input
-                    id="copierNameFilter"
-                    class="input is-small"
-                    type="search"
-                    placeholder="Copier name"
-                    autocomplete="off"
-                  />
                 </div>
               </div>
             </div>
             <div class="level-right">
-              <button
-                id="toggleHiddenCopiers"
-                class="button is-small is-light mt-4"
-                type="button"
-                aria-pressed="false"
-              >
-                Show hidden copiers
-              </button>
+              <div class="level-item">
+                <div class="field">
+                  <div class="control has-icons-left">
+                    <input
+                      id="copierNameFilter"
+                      class="input is-small"
+                      type="search"
+                      placeholder="Copier name"
+                      autocomplete="off"
+                      aria-label="Filter copiers by name"
+                    />
+                    <span class="icon is-small is-left">
+                      <i class="fa-solid fa-filter" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="level-item">
+                <button
+                  id="toggleHiddenCopiers"
+                  class="button is-small is-light"
+                  type="button"
+                  aria-pressed="false"
+                >
+                  Show hidden copiers
+                </button>
+              </div>
             </div>
           </div>
 
