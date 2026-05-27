@@ -25,10 +25,10 @@ interface DashboardData {
 interface DashboardChartSeries {
   name: string
   type: 'line'
-  showSymbol: false
+  showSymbol: boolean
   data: Array<[number, number]>
   markArea?: {
-    silent: true
+    silent: boolean
     tooltip: {
       show: false
     }
