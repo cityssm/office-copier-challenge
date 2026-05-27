@@ -2,6 +2,7 @@ import type { EChartsType } from 'echarts/types/dist/echarts'
 
 const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
+const DEFAULT_COPIER_COUNT = 9
 
 interface DashboardPoint {
   timeMillis: number
@@ -18,6 +19,7 @@ interface DashboardData {
   copiers: DashboardCopier[]
   defaultCopierIds: number[]
   defaultDurationDays: number
+  holidayDayStartMillis: number[]
   durationOptions: Array<{
     days: number
     label: string
@@ -150,13 +152,15 @@ function clampRange(
 function buildShadedTimeRanges(
   startMillis: number,
   endMillis: number,
-  useDailyCounts: boolean
+  useDailyCounts: boolean,
+  holidayDayStartMillis: number[]
 ): Array<[{ xAxis: number }, { xAxis: number }]> {
   if (endMillis <= startMillis) {
     return []
   }
 
   const shadedRanges: Array<[{ xAxis: number }, { xAxis: number }]> = []
+  const holidayDayStartSet = new Set<number>(holidayDayStartMillis)
 
   for (
     let dayStartMillis = normalizeToLocalDay(startMillis);
@@ -166,8 +170,9 @@ function buildShadedTimeRanges(
     const dayEndMillis = addLocalDay(dayStartMillis)
     const dayOfWeek = new Date(dayStartMillis).getDay()
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    const isHoliday = holidayDayStartSet.has(dayStartMillis)
 
-    if (isWeekend) {
+    if (isWeekend || isHoliday) {
       const weekendRange = clampRange(
         dayStartMillis,
         dayEndMillis,
@@ -263,7 +268,8 @@ function buildShadedTimeRanges(
     const shadedTimeRanges = buildShadedTimeRanges(
       cutoffMillis,
       nowMillis,
-      useDailyCounts
+      useDailyCounts,
+      dashboardData.holidayDayStartMillis
     )
 
     const selectedCopierIds = [
@@ -349,7 +355,74 @@ function buildShadedTimeRanges(
   const checkboxElements = document.querySelectorAll<HTMLInputElement>(
     '.js-copier-checkbox'
   )
+  const copierFilterElement = document.querySelector('#copierNameFilter')
+  const copierOptionElements = document.querySelectorAll<HTMLDivElement>(
+    '.js-copier-option'
+  )
   let showHiddenCopiers = false
+  let copierNameFilterText = ''
+
+  const getDurationRange = (): {
+    cutoffMillis: number
+  } => {
+    const selectedDurationDays = Number(chartDurationDaysElement.value)
+    const nowMillis = Date.now()
+
+    return {
+      cutoffMillis:
+        nowMillis -
+        (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) *
+          DAY_MILLIS
+    }
+  }
+
+  const getPrintCountInRange = (
+    copier: DashboardCopier,
+    cutoffMillis: number
+  ): number => {
+    return buildHourlyDeltaSeries(copier.hourlyCounts)
+      .filter(([timeMillis]) => timeMillis >= cutoffMillis)
+      .reduce((total, [, printCount]) => total + printCount, 0)
+  }
+
+  const updateCopierCheckboxesForDuration = (): void => {
+    const { cutoffMillis } = getDurationRange()
+    const copierCounts = dashboardData.copiers.map((copier) => ({
+      copierId: copier.copierId,
+      copierName: copier.copierName,
+      printCount: getPrintCountInRange(copier, cutoffMillis)
+    }))
+
+    for (const copierCount of copierCounts) {
+      const checkboxElement = document.querySelector<HTMLInputElement>(
+        `.js-copier-checkbox[value="${copierCount.copierId}"]`
+      )
+      const countElement = checkboxElement
+        ?.closest('.js-copier-option')
+        ?.querySelector('.js-copier-count')
+
+      if (countElement instanceof HTMLSpanElement) {
+        countElement.textContent = copierCount.printCount.toLocaleString()
+      }
+    }
+
+    const selectedCopierIds = new Set(
+      copierCounts
+        .toSorted((copierA, copierB) => {
+          if (copierB.printCount !== copierA.printCount) {
+            return copierB.printCount - copierA.printCount
+          }
+
+          return copierA.copierName.localeCompare(copierB.copierName)
+        })
+        .slice(0, DEFAULT_COPIER_COUNT)
+        .map((copier) => copier.copierId)
+    )
+
+    for (const checkboxElement of checkboxElements) {
+      checkboxElement.checked = selectedCopierIds.has(Number(checkboxElement.value))
+    }
+  }
 
   const updateHiddenCopiersButton = (): void => {
     toggleHiddenCopiersElement.textContent = showHiddenCopiers
@@ -362,25 +435,21 @@ function buildShadedTimeRanges(
   }
 
   const updateCopierVisibility = (): void => {
-    for (const checkboxElement of checkboxElements) {
-      const copierOptionElement = checkboxElement.closest('.js-copier-option')
-
-      if (!(copierOptionElement instanceof HTMLDivElement)) {
-        continue
-      }
+    for (const copierOptionElement of copierOptionElements) {
+      const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox')
+      const copierName = copierOptionElement.dataset.copierName ?? ''
+      const matchesFilter = copierName.includes(copierNameFilterText)
+      const isSelected =
+        checkboxElement instanceof HTMLInputElement && checkboxElement.checked
 
       copierOptionElement.classList.toggle(
         'is-hidden',
-        !showHiddenCopiers && !checkboxElement.checked
+        !matchesFilter || (!showHiddenCopiers && !isSelected)
       )
     }
   }
 
   for (const checkboxElement of checkboxElements) {
-    checkboxElement.checked = dashboardData.defaultCopierIds.includes(
-      Number(checkboxElement.value)
-    )
-
     checkboxElement.addEventListener('change', () => {
       updateChart()
       updateCopierVisibility()
@@ -389,8 +458,17 @@ function buildShadedTimeRanges(
 
   chartDurationDaysElement.value = String(dashboardData.defaultDurationDays)
   chartDurationDaysElement.addEventListener('change', () => {
+    updateCopierCheckboxesForDuration()
     updateChart()
+    updateCopierVisibility()
   })
+
+  if (copierFilterElement instanceof HTMLInputElement) {
+    copierFilterElement.addEventListener('input', () => {
+      copierNameFilterText = copierFilterElement.value.trim().toLocaleLowerCase()
+      updateCopierVisibility()
+    })
+  }
 
   toggleHiddenCopiersElement.addEventListener('click', () => {
     showHiddenCopiers = !showHiddenCopiers
@@ -444,6 +522,17 @@ function buildShadedTimeRanges(
     }
   }
 
+  if (dashboardData.defaultCopierIds.length > 0) {
+    const selectedDefaultCopierIds = new Set(dashboardData.defaultCopierIds)
+
+    for (const checkboxElement of checkboxElements) {
+      checkboxElement.checked = selectedDefaultCopierIds.has(
+        Number(checkboxElement.value)
+      )
+    }
+  }
+
+  updateCopierCheckboxesForDuration()
   updateHiddenCopiersButton()
   updateChart()
   updateCopierVisibility()
