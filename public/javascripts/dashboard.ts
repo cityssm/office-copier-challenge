@@ -3,6 +3,7 @@ import type { EChartsType } from 'echarts/types/dist/echarts'
 const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
 const DEFAULT_SELECTED_COPIER_COUNT = 9
+const LOW_PRINT_THRESHOLD = 5
 
 interface DashboardPoint {
   timeMillis: number
@@ -220,6 +221,192 @@ function buildShadedTimeRanges(
   return shadedRanges
 }
 
+function computeKpisForRange(
+  copiers: DashboardCopier[],
+  cutoffMillis: number
+): {
+  busiestHour: { timeMillis: number; totalPrints: number } | undefined
+  busiestCopierHour:
+    | { copierName: string; timeMillis: number; prints: number }
+    | undefined
+  mostConsecutiveTopCopier: { copierName: string; hours: number } | undefined
+  mostConsecutiveActiveHours: { copierName: string; hours: number } | undefined
+  mostConsecutiveLowPrint: { copierName: string; hours: number } | undefined
+} {
+  const copierHourlyDeltas = copiers.map((copier) => ({
+    copier,
+    hourlyDeltas: buildHourlyDeltaSeries(copier.hourlyCounts).filter(
+      ([timeMillis]) => timeMillis >= cutoffMillis
+    )
+  }))
+
+  // Build per-copier hour maps and collect all unique hours in range
+  const allHoursSet = new Set<number>()
+  const copierHourMaps = copierHourlyDeltas.map(({ copier, hourlyDeltas }) => {
+    const hourMap = new Map<number, number>()
+    for (const [timeMillis, prints] of hourlyDeltas) {
+      hourMap.set(timeMillis, prints)
+      allHoursSet.add(timeMillis)
+    }
+    return { copier, hourMap, hourlyDeltas }
+  })
+
+  const allHours = [...allHoursSet].toSorted((a, b) => a - b)
+
+  // KPI 1a: Busiest hour overall (sum across all copiers)
+  let busiestHourTime: number | undefined
+  let busiestHourTotal = 0
+  for (const timeMillis of allHours) {
+    let total = 0
+    for (const { hourMap } of copierHourMaps) {
+      total += hourMap.get(timeMillis) ?? 0
+    }
+    if (total > busiestHourTotal) {
+      busiestHourTotal = total
+      busiestHourTime = timeMillis
+    }
+  }
+
+  // KPI 1b: Busiest individual copier + hour
+  let busiestCopierHour:
+    | { copierName: string; timeMillis: number; prints: number }
+    | undefined
+
+  for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
+    for (const [timeMillis, prints] of hourlyDeltas) {
+      if (busiestCopierHour === undefined || prints > busiestCopierHour.prints) {
+        busiestCopierHour = { copierName: copier.copierName, timeMillis, prints }
+      }
+    }
+  }
+
+  // KPI 2a: Most consecutive hours as the top copier
+  const hourTopCopierName = new Map<number, string>()
+  for (const timeMillis of allHours) {
+    let topName: string | undefined
+    let topPrints = 0
+    for (const { copier, hourMap } of copierHourMaps) {
+      const prints = hourMap.get(timeMillis) ?? 0
+      if (prints > topPrints) {
+        topPrints = prints
+        topName = copier.copierName
+      }
+    }
+    if (topName !== undefined) {
+      hourTopCopierName.set(timeMillis, topName)
+    }
+  }
+
+  let longestTopRun = 0
+  let longestTopCopier: string | undefined
+  let currentTopCopier: string | undefined
+  let currentTopRun = 0
+
+  for (let index = 0; index < allHours.length; index++) {
+    const timeMillis = allHours[index]
+    const topName = hourTopCopierName.get(timeMillis)
+    const isConsecutive =
+      index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS
+
+    if (topName !== undefined && topName === currentTopCopier && isConsecutive) {
+      currentTopRun++
+    } else {
+      currentTopCopier = topName
+      currentTopRun = topName !== undefined ? 1 : 0
+    }
+
+    if (currentTopCopier !== undefined && currentTopRun > longestTopRun) {
+      longestTopRun = currentTopRun
+      longestTopCopier = currentTopCopier
+    }
+  }
+
+  // KPI 2b: Most consecutive hours with copies > 0
+  let longestActiveRun = 0
+  let longestActiveCopier: string | undefined
+
+  for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
+    let currentRun = 0
+
+    for (let index = 0; index < hourlyDeltas.length; index++) {
+      const [timeMillis, prints] = hourlyDeltas[index]
+      const isConsecutive =
+        index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
+
+      if (prints > 0) {
+        currentRun = isConsecutive && currentRun > 0 ? currentRun + 1 : 1
+      } else {
+        currentRun = 0
+      }
+
+      if (currentRun > longestActiveRun) {
+        longestActiveRun = currentRun
+        longestActiveCopier = copier.copierName
+      }
+    }
+  }
+
+  // KPI 3: Most consecutive hours with fewer than 5 copies
+  let longestLowRun = 0
+  let longestLowTotal = 0
+  let longestLowCopier: string | undefined
+
+  for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
+    let currentRun = 0
+    let currentLowTotal = 0
+
+    for (let index = 0; index < hourlyDeltas.length; index++) {
+      const [timeMillis, prints] = hourlyDeltas[index]
+      const isConsecutive =
+        index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
+
+      if (prints < LOW_PRINT_THRESHOLD) {
+        if (isConsecutive && currentRun > 0) {
+          currentRun++
+          currentLowTotal += prints
+        } else {
+          currentRun = 1
+          currentLowTotal = prints
+        }
+      } else {
+        currentRun = 0
+        currentLowTotal = 0
+      }
+
+      if (
+        currentRun > longestLowRun ||
+        (currentRun === longestLowRun &&
+          currentRun > 0 &&
+          currentLowTotal < longestLowTotal)
+      ) {
+        longestLowRun = currentRun
+        longestLowTotal = currentLowTotal
+        longestLowCopier = copier.copierName
+      }
+    }
+  }
+
+  return {
+    busiestHour:
+      busiestHourTime !== undefined
+        ? { timeMillis: busiestHourTime, totalPrints: busiestHourTotal }
+        : undefined,
+    busiestCopierHour,
+    mostConsecutiveTopCopier:
+      longestTopCopier !== undefined
+        ? { copierName: longestTopCopier, hours: longestTopRun }
+        : undefined,
+    mostConsecutiveActiveHours:
+      longestActiveCopier !== undefined
+        ? { copierName: longestActiveCopier, hours: longestActiveRun }
+        : undefined,
+    mostConsecutiveLowPrint:
+      longestLowCopier !== undefined
+        ? { copierName: longestLowCopier, hours: longestLowRun }
+        : undefined
+  }
+}
+
 ;(() => {
   const dashboardDataElement = document.querySelector('#dashboardData')
 
@@ -376,6 +563,72 @@ function buildShadedTimeRanges(
     }
   }
 
+  const updateKpis = (): void => {
+    const kpiSectionElement = document.querySelector('#kpiSection')
+
+    if (!(kpiSectionElement instanceof HTMLElement)) {
+      return
+    }
+
+    const { cutoffMillis } = getDurationRange()
+    const kpis = computeKpisForRange(dashboardData.copiers, cutoffMillis)
+
+    const setKpiText = (id: string, text: string): void => {
+      const element = document.querySelector(`#${id}`)
+      if (element instanceof HTMLElement) {
+        element.textContent = text
+      }
+    }
+
+    const noData = 'No data available'
+    const hourWord = (count: number): string => (count === 1 ? 'hour' : 'hours')
+
+    if (kpis.busiestHour !== undefined) {
+      setKpiText(
+        'kpiBusiestHour',
+        `${formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis))} (${kpis.busiestHour.totalPrints.toLocaleString()} prints)`
+      )
+    } else {
+      setKpiText('kpiBusiestHour', noData)
+    }
+
+    if (kpis.busiestCopierHour !== undefined) {
+      setKpiText(
+        'kpiBusiestCopierHour',
+        `${kpis.busiestCopierHour.copierName}, ${formatTooltipDateTime(new Date(kpis.busiestCopierHour.timeMillis))} (${kpis.busiestCopierHour.prints.toLocaleString()} prints)`
+      )
+    } else {
+      setKpiText('kpiBusiestCopierHour', noData)
+    }
+
+    if (kpis.mostConsecutiveTopCopier !== undefined) {
+      setKpiText(
+        'kpiTopCopierStreak',
+        `${kpis.mostConsecutiveTopCopier.copierName} (${kpis.mostConsecutiveTopCopier.hours} ${hourWord(kpis.mostConsecutiveTopCopier.hours)})`
+      )
+    } else {
+      setKpiText('kpiTopCopierStreak', noData)
+    }
+
+    if (kpis.mostConsecutiveActiveHours !== undefined) {
+      setKpiText(
+        'kpiActiveStreak',
+        `${kpis.mostConsecutiveActiveHours.copierName} (${kpis.mostConsecutiveActiveHours.hours} ${hourWord(kpis.mostConsecutiveActiveHours.hours)})`
+      )
+    } else {
+      setKpiText('kpiActiveStreak', noData)
+    }
+
+    if (kpis.mostConsecutiveLowPrint !== undefined) {
+      setKpiText(
+        'kpiLowPrintStreak',
+        `${kpis.mostConsecutiveLowPrint.copierName} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)})`
+      )
+    } else {
+      setKpiText('kpiLowPrintStreak', noData)
+    }
+  }
+
   const getPrintCountInRange = (
     copier: DashboardCopier,
     cutoffMillis: number
@@ -461,6 +714,7 @@ function buildShadedTimeRanges(
     updateCopierCheckboxesForDuration()
     updateChart()
     updateCopierVisibility()
+    updateKpis()
   })
 
   if (copierFilterElement instanceof HTMLInputElement) {
@@ -526,6 +780,7 @@ function buildShadedTimeRanges(
   updateHiddenCopiersButton()
   updateChart()
   updateCopierVisibility()
+  updateKpis()
 
   window.addEventListener('resize', () => {
     chart.resize()
