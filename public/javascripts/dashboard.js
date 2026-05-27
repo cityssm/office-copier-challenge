@@ -107,6 +107,26 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts, holidayDa
     return shadedRanges;
 }
 function computeKpisForRange(copiers, cutoffMillis) {
+    const totalPrintsByCopierName = new Map(copiers.map((copier) => [copier.copierName, copier.totalPrints]));
+    function getWinningCopierNames(copierNames, useHighestTotals) {
+        const uniqueCopierNames = [...new Set(copierNames)];
+        if (uniqueCopierNames.length <= 1) {
+            return uniqueCopierNames;
+        }
+        let targetTotalPrints;
+        for (const copierName of uniqueCopierNames) {
+            const totalPrints = totalPrintsByCopierName.get(copierName) ?? 0;
+            if (targetTotalPrints === undefined ||
+                (useHighestTotals
+                    ? totalPrints > targetTotalPrints
+                    : totalPrints < targetTotalPrints)) {
+                targetTotalPrints = totalPrints;
+            }
+        }
+        return uniqueCopierNames
+            .filter((copierName) => (totalPrintsByCopierName.get(copierName) ?? 0) === targetTotalPrints)
+            .toSorted((nameA, nameB) => nameA.localeCompare(nameB));
+    }
     const copierHourlyDeltas = copiers.map((copier) => ({
         copier,
         hourlyDeltas: buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
@@ -134,52 +154,96 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
     }
     let busiestCopierHour;
+    const busiestCopierHourCandidates = [];
+    let busiestCopierPrints = -1;
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
         for (const [timeMillis, prints] of hourlyDeltas) {
-            if (busiestCopierHour === undefined || prints > busiestCopierHour.prints) {
-                busiestCopierHour = { copierName: copier.copierName, timeMillis, prints };
+            if (prints > busiestCopierPrints) {
+                busiestCopierPrints = prints;
+                busiestCopierHourCandidates.length = 0;
+                busiestCopierHourCandidates.push({
+                    copierName: copier.copierName,
+                    timeMillis
+                });
+            }
+            else if (prints === busiestCopierPrints) {
+                busiestCopierHourCandidates.push({
+                    copierName: copier.copierName,
+                    timeMillis
+                });
             }
         }
     }
-    const hourTopCopierName = new Map();
+    if (busiestCopierHourCandidates.length > 0) {
+        const winningCopierNames = new Set(getWinningCopierNames(busiestCopierHourCandidates.map((candidate) => candidate.copierName), true));
+        const busiestTimeByCopierName = new Map();
+        for (const candidate of busiestCopierHourCandidates) {
+            if (!winningCopierNames.has(candidate.copierName)) {
+                continue;
+            }
+            const existingTimeMillis = busiestTimeByCopierName.get(candidate.copierName);
+            if (existingTimeMillis === undefined ||
+                candidate.timeMillis < existingTimeMillis) {
+                busiestTimeByCopierName.set(candidate.copierName, candidate.timeMillis);
+            }
+        }
+        busiestCopierHour = {
+            copierHours: [...busiestTimeByCopierName.entries()]
+                .map(([copierName, timeMillis]) => ({ copierName, timeMillis }))
+                .toSorted((copierA, copierB) => copierA.copierName.localeCompare(copierB.copierName)),
+            prints: busiestCopierPrints
+        };
+    }
+    const hourTopCopierNames = new Map();
     for (const timeMillis of allHours) {
-        let topName;
         let topPrints = 0;
+        const topCopierNames = [];
         for (const { copier, hourMap } of copierHourMaps) {
             const prints = hourMap.get(timeMillis) ?? 0;
             if (prints > topPrints) {
                 topPrints = prints;
-                topName = copier.copierName;
+                topCopierNames.length = 0;
+                topCopierNames.push(copier.copierName);
+            }
+            else if (prints === topPrints && prints > 0) {
+                topCopierNames.push(copier.copierName);
             }
         }
-        if (topName !== undefined) {
-            hourTopCopierName.set(timeMillis, topName);
+        if (topCopierNames.length > 0) {
+            hourTopCopierNames.set(timeMillis, topCopierNames);
         }
     }
-    let longestTopRun = 0;
-    let longestTopCopier;
-    let currentTopCopier;
-    let currentTopRun = 0;
-    for (let index = 0; index < allHours.length; index++) {
-        const timeMillis = allHours[index];
-        const topName = hourTopCopierName.get(timeMillis);
-        const isConsecutive = index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS;
-        if (topName !== undefined && topName === currentTopCopier && isConsecutive) {
-            currentTopRun++;
+    const longestTopRunByCopierName = new Map();
+    for (const { copier } of copierHourlyDeltas) {
+        let currentRun = 0;
+        let previousWasTop = false;
+        let longestRun = 0;
+        for (let index = 0; index < allHours.length; index++) {
+            const timeMillis = allHours[index];
+            const topCopierNames = hourTopCopierNames.get(timeMillis) ?? [];
+            const isTopCopier = topCopierNames.includes(copier.copierName);
+            const isConsecutive = index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS;
+            if (isTopCopier) {
+                currentRun = isConsecutive && previousWasTop ? currentRun + 1 : 1;
+            }
+            else {
+                currentRun = 0;
+            }
+            previousWasTop = isTopCopier;
+            longestRun = Math.max(longestRun, currentRun);
         }
-        else {
-            currentTopCopier = topName;
-            currentTopRun = topName !== undefined ? 1 : 0;
-        }
-        if (currentTopCopier !== undefined && currentTopRun > longestTopRun) {
-            longestTopRun = currentTopRun;
-            longestTopCopier = currentTopCopier;
-        }
+        longestTopRunByCopierName.set(copier.copierName, longestRun);
     }
-    let longestActiveRun = 0;
-    let longestActiveCopier;
+    const longestTopRun = Math.max(...longestTopRunByCopierName.values(), 0);
+    const longestTopCopierNames = longestTopRun > 0
+        ? getWinningCopierNames([...longestTopRunByCopierName.entries()]
+            .filter(([, run]) => run === longestTopRun)
+            .map(([copierName]) => copierName), true)
+        : [];
+    const longestActiveRunByCopierName = new Map();
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
         let currentRun = 0;
+        let longestRun = 0;
         for (let index = 0; index < hourlyDeltas.length; index++) {
             const [timeMillis, prints] = hourlyDeltas[index];
             const isConsecutive = index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS;
@@ -189,58 +253,57 @@ function computeKpisForRange(copiers, cutoffMillis) {
             else {
                 currentRun = 0;
             }
-            if (currentRun > longestActiveRun) {
-                longestActiveRun = currentRun;
-                longestActiveCopier = copier.copierName;
-            }
+            longestRun = Math.max(longestRun, currentRun);
         }
+        longestActiveRunByCopierName.set(copier.copierName, longestRun);
     }
-    let longestLowRun = 0;
-    let longestLowTotal = 0;
-    let longestLowCopier;
+    const longestActiveRun = Math.max(...longestActiveRunByCopierName.values(), 0);
+    const longestActiveCopierNames = longestActiveRun > 0
+        ? getWinningCopierNames([...longestActiveRunByCopierName.entries()]
+            .filter(([, run]) => run === longestActiveRun)
+            .map(([copierName]) => copierName), true)
+        : [];
+    const longestLowRunByCopierName = new Map();
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
         let currentRun = 0;
-        let currentLowTotal = 0;
+        let longestRun = 0;
         for (let index = 0; index < hourlyDeltas.length; index++) {
             const [timeMillis, prints] = hourlyDeltas[index];
             const isConsecutive = index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS;
             if (prints < LOW_PRINT_THRESHOLD) {
                 if (isConsecutive && currentRun > 0) {
                     currentRun++;
-                    currentLowTotal += prints;
                 }
                 else {
                     currentRun = 1;
-                    currentLowTotal = prints;
                 }
             }
             else {
                 currentRun = 0;
-                currentLowTotal = 0;
             }
-            if (currentRun > longestLowRun ||
-                (currentRun === longestLowRun &&
-                    currentRun > 0 &&
-                    currentLowTotal < longestLowTotal)) {
-                longestLowRun = currentRun;
-                longestLowTotal = currentLowTotal;
-                longestLowCopier = copier.copierName;
-            }
+            longestRun = Math.max(longestRun, currentRun);
         }
+        longestLowRunByCopierName.set(copier.copierName, longestRun);
     }
+    const longestLowRun = Math.max(...longestLowRunByCopierName.values(), 0);
+    const longestLowCopierNames = longestLowRun > 0
+        ? getWinningCopierNames([...longestLowRunByCopierName.entries()]
+            .filter(([, run]) => run === longestLowRun)
+            .map(([copierName]) => copierName), false)
+        : [];
     return {
         busiestHour: busiestHourTime !== undefined
             ? { timeMillis: busiestHourTime, totalPrints: busiestHourTotal }
             : undefined,
         busiestCopierHour,
-        mostConsecutiveTopCopier: longestTopCopier !== undefined
-            ? { copierName: longestTopCopier, hours: longestTopRun }
+        mostConsecutiveTopCopier: longestTopCopierNames.length > 0
+            ? { copierNames: longestTopCopierNames, hours: longestTopRun }
             : undefined,
-        mostConsecutiveActiveHours: longestActiveCopier !== undefined
-            ? { copierName: longestActiveCopier, hours: longestActiveRun }
+        mostConsecutiveActiveHours: longestActiveCopierNames.length > 0
+            ? { copierNames: longestActiveCopierNames, hours: longestActiveRun }
             : undefined,
-        mostConsecutiveLowPrint: longestLowCopier !== undefined
-            ? { copierName: longestLowCopier, hours: longestLowRun }
+        mostConsecutiveLowPrint: longestLowCopierNames.length > 0
+            ? { copierNames: longestLowCopierNames, hours: longestLowRun }
             : undefined
     };
 }
@@ -373,25 +436,28 @@ function computeKpisForRange(copiers, cutoffMillis) {
             setKpiText('kpiBusiestHour', noData);
         }
         if (kpis.busiestCopierHour !== undefined) {
-            setKpiText('kpiBusiestCopierHour', `${kpis.busiestCopierHour.copierName}, ${formatTooltipDateTime(new Date(kpis.busiestCopierHour.timeMillis))} (${kpis.busiestCopierHour.prints.toLocaleString()} prints)`);
+            const busiestCopierHourLabel = kpis.busiestCopierHour.copierHours
+                .map((copierHour) => `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))}`)
+                .join('; ');
+            setKpiText('kpiBusiestCopierHour', `${busiestCopierHourLabel} (${kpis.busiestCopierHour.prints.toLocaleString()} prints)`);
         }
         else {
             setKpiText('kpiBusiestCopierHour', noData);
         }
         if (kpis.mostConsecutiveTopCopier !== undefined) {
-            setKpiText('kpiTopCopierStreak', `${kpis.mostConsecutiveTopCopier.copierName} (${kpis.mostConsecutiveTopCopier.hours} ${hourWord(kpis.mostConsecutiveTopCopier.hours)})`);
+            setKpiText('kpiTopCopierStreak', `${kpis.mostConsecutiveTopCopier.copierNames.join(', ')} (${kpis.mostConsecutiveTopCopier.hours} ${hourWord(kpis.mostConsecutiveTopCopier.hours)})`);
         }
         else {
             setKpiText('kpiTopCopierStreak', noData);
         }
         if (kpis.mostConsecutiveActiveHours !== undefined) {
-            setKpiText('kpiActiveStreak', `${kpis.mostConsecutiveActiveHours.copierName} (${kpis.mostConsecutiveActiveHours.hours} ${hourWord(kpis.mostConsecutiveActiveHours.hours)})`);
+            setKpiText('kpiActiveStreak', `${kpis.mostConsecutiveActiveHours.copierNames.join(', ')} (${kpis.mostConsecutiveActiveHours.hours} ${hourWord(kpis.mostConsecutiveActiveHours.hours)})`);
         }
         else {
             setKpiText('kpiActiveStreak', noData);
         }
         if (kpis.mostConsecutiveLowPrint !== undefined) {
-            setKpiText('kpiLowPrintStreak', `${kpis.mostConsecutiveLowPrint.copierName} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)})`);
+            setKpiText('kpiLowPrintStreak', `${kpis.mostConsecutiveLowPrint.copierNames.join(', ')} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)})`);
         }
         else {
             setKpiText('kpiLowPrintStreak', noData);
