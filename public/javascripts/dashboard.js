@@ -7,6 +7,16 @@ function normalizeToHour(timeMillis) {
 function normalizeToDay(timeMillis) {
     return Math.floor(timeMillis / DAY_MILLIS) * DAY_MILLIS;
 }
+function normalizeToLocalDay(timeMillis) {
+    const date = new Date(timeMillis);
+    date.setHours(0, 0, 0, 0);
+    return date.getTime();
+}
+function addLocalDay(timeMillis) {
+    const date = new Date(timeMillis);
+    date.setDate(date.getDate() + 1);
+    return date.getTime();
+}
 function buildHourlyDeltaSeries(hourlyCounts) {
     const maximumCountByHour = new Map();
     for (const hourlyCount of hourlyCounts) {
@@ -46,6 +56,46 @@ function formatHourAmPm(date) {
     const hour12 = hours % 12 === 0 ? 12 : hours % 12;
     return `${hour12} ${ampm}`;
 }
+function clampRange(rangeStartMillis, rangeEndMillis, minMillis, maxMillis) {
+    const clampedStartMillis = Math.max(rangeStartMillis, minMillis);
+    const clampedEndMillis = Math.min(rangeEndMillis, maxMillis);
+    return clampedStartMillis < clampedEndMillis
+        ? [clampedStartMillis, clampedEndMillis]
+        : undefined;
+}
+function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts) {
+    if (endMillis <= startMillis) {
+        return [];
+    }
+    const shadedRanges = [];
+    for (let dayStartMillis = normalizeToLocalDay(startMillis); dayStartMillis < endMillis; dayStartMillis = addLocalDay(dayStartMillis)) {
+        const dayEndMillis = addLocalDay(dayStartMillis);
+        const dayOfWeek = new Date(dayStartMillis).getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        if (isWeekend) {
+            const weekendRange = clampRange(dayStartMillis, dayEndMillis, startMillis, endMillis);
+            if (weekendRange !== undefined) {
+                shadedRanges.push([
+                    { xAxis: weekendRange[0] },
+                    { xAxis: weekendRange[1] }
+                ]);
+            }
+            continue;
+        }
+        if (useDailyCounts) {
+            continue;
+        }
+        const morningRange = clampRange(dayStartMillis, dayStartMillis + 7 * HOUR_MILLIS, startMillis, endMillis);
+        if (morningRange !== undefined) {
+            shadedRanges.push([{ xAxis: morningRange[0] }, { xAxis: morningRange[1] }]);
+        }
+        const eveningRange = clampRange(dayStartMillis + 17 * HOUR_MILLIS, dayEndMillis, startMillis, endMillis);
+        if (eveningRange !== undefined) {
+            shadedRanges.push([{ xAxis: eveningRange[0] }, { xAxis: eveningRange[1] }]);
+        }
+    }
+    return shadedRanges;
+}
 ;
 (() => {
     const dashboardDataElement = document.querySelector('#dashboardData');
@@ -72,8 +122,11 @@ function formatHourAmPm(date) {
     const chart = echarts.init(chartContainerElement);
     const updateChart = () => {
         const selectedDurationDays = Number(chartDurationDaysElement.value);
-        const cutoffMillis = Date.now() - (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS;
+        const nowMillis = Date.now();
+        const cutoffMillis = nowMillis -
+            (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS;
         const useDailyCounts = selectedDurationDays === 30 || selectedDurationDays === 60;
+        const shadedTimeRanges = buildShadedTimeRanges(cutoffMillis, nowMillis, useDailyCounts);
         const selectedCopierIds = [
             ...document.querySelectorAll('.js-copier-checkbox:checked')
         ].map((checkboxElement) => Number(checkboxElement.value));
@@ -81,6 +134,29 @@ function formatHourAmPm(date) {
             .map((copierId) => copierDataById.get(copierId))
             .filter((copier) => copier !== undefined);
         chart.clear();
+        const series = selectedCopiers.map((copier) => ({
+            name: copier.copierName,
+            type: 'line',
+            showSymbol: false,
+            data: useDailyCounts
+                ? buildDailyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
+                : buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
+        }));
+        if (series.length > 0 && shadedTimeRanges.length > 0) {
+            series[0] = {
+                ...series[0],
+                markArea: {
+                    silent: true,
+                    tooltip: {
+                        show: false
+                    },
+                    itemStyle: {
+                        color: 'rgba(128, 128, 128, 0.18)'
+                    },
+                    data: shadedTimeRanges
+                }
+            };
+        }
         chart.setOption({
             animation: false,
             tooltip: {
@@ -103,14 +179,7 @@ function formatHourAmPm(date) {
                 type: 'value',
                 name: useDailyCounts ? 'Daily Prints' : 'Hourly Prints'
             },
-            series: selectedCopiers.map((copier) => ({
-                name: copier.copierName,
-                type: 'line',
-                showSymbol: false,
-                data: useDailyCounts
-                    ? buildDailyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
-                    : buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
-            }))
+            series
         });
     };
     const checkboxElements = document.querySelectorAll('.js-copier-checkbox');
