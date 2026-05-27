@@ -81,12 +81,8 @@ app
   .use(`${urlPrefix}/lib/bulma`, express.static('node_modules/bulma/css'))
   .use(`${urlPrefix}/lib/echarts`, express.static('node_modules/echarts/dist'))
   .use(
-    `${urlPrefix}/lib/fa/js/all.min.js`,
-    express.static('node_modules/@fortawesome/fontawesome-free/js/all.min.js')
-  )
-  .use(
-    `${urlPrefix}/lib/fa/css/all.min.css`,
-    express.static('node_modules/@fortawesome/fontawesome-free/css/all.min.css')
+    `${urlPrefix}/lib/fa`,
+    express.static('node_modules/@fortawesome/fontawesome-free')
   )
 
 /*
