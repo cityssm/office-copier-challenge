@@ -76,10 +76,12 @@ function normalizeToLocalDay(timeMillis: number): number {
 }
 
 const CANADIAN_HOLIDAY_DATES: Array<[number, number, number]> = [
+  // Tuple format: [year, zeroIndexedMonth, dayOfMonth]
+  // Keep this list aligned with the years covered by dashboard data.
   [2026, 0, 1],
   [2026, 1, 16],
   [2026, 3, 3],
-  [2026, 4, 25],
+  [2026, 4, 18],
   [2026, 6, 1],
   [2026, 7, 3],
   [2026, 8, 7],
@@ -91,14 +93,13 @@ const CANADIAN_HOLIDAY_DATES: Array<[number, number, number]> = [
   [2027, 0, 1],
   [2027, 1, 15],
   [2027, 2, 26],
-  [2027, 4, 31],
+  [2027, 4, 24],
   [2027, 6, 1],
   [2027, 7, 2],
   [2027, 8, 6],
   [2027, 8, 30],
   [2027, 9, 11],
   [2027, 10, 11],
-  [2027, 11, 27],
   [2027, 11, 27]
 ]
 
