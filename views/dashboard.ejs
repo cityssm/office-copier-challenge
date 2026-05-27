@@ -81,10 +81,7 @@
                     : 'Low usage' %>
               <% const mediumTierTransform = 'up-2 left-2 shrink-1' %>
               <% const highTierTransforms = [mediumTierTransform, 'up-4 left-4 shrink-2'] %>
-              <% let copierTierIconConfig = {
-                iconClass: 'has-text-success',
-                transforms: []
-              } %>
+              <% let copierTierIconConfig %>
               <% if (copierIndex < topBandEndIndex) { %>
                 <% copierTierIconConfig = {
                   iconClass: 'has-text-danger',
@@ -94,6 +91,11 @@
                 <% copierTierIconConfig = {
                   iconClass: 'has-text-warning',
                   transforms: [mediumTierTransform]
+                } %>
+              <% } else { %>
+                <% copierTierIconConfig = {
+                  iconClass: 'has-text-success',
+                  transforms: []
                 } %>
               <% } %>
               <div class="column is-half-tablet is-one-third-desktop js-copier-option">
