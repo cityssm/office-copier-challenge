@@ -96,9 +96,21 @@
                     value="<%= copier.copierId %>"
                   />
                   <span class="icon ml-2 mr-2" title="<%= copierTierLabel %>">
-                    <span class="copier-tier-icon-stack <%= copierTierIconClass %>">
-                      <% for (let iconIndex = 0; iconIndex < copierTierIconCount; iconIndex += 1) { %>
-                        <i class="fa-solid fa-file copier-tier-icon" aria-hidden="true"></i>
+                    <span class="fa-layers fa-fw <%= copierTierIconClass %>">
+                      <i class="fa-solid fa-file" aria-hidden="true"></i>
+                      <% if (copierTierIconCount >= 2) { %>
+                        <i
+                          class="fa-solid fa-file"
+                          data-fa-transform="up-2 left-2 shrink-1"
+                          aria-hidden="true"
+                        ></i>
+                      <% } %>
+                      <% if (copierTierIconCount >= 3) { %>
+                        <i
+                          class="fa-solid fa-file"
+                          data-fa-transform="up-4 left-4 shrink-2"
+                          aria-hidden="true"
+                        ></i>
                       <% } %>
                     </span>
                   </span>
