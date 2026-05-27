@@ -7,7 +7,7 @@ import getLatestCopierCountValue from '../database/getLatestCopierCountValue.js'
 import recordCopierCount from '../database/recordCopierCount.js';
 import { DEBUG_NAMESPACE } from '../debug.config.js';
 import { community, oids } from '../helpers/oid.helpers.js';
-const pollingInterval = minutesToMillis(15);
+const pollingInterval = minutesToMillis(20);
 const debug = Debug(`${DEBUG_NAMESPACE}:tasks:snmp`);
 function recordLastKnownCount(copier, oid) {
     let lastCountValue;
