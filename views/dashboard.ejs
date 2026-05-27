@@ -81,10 +81,10 @@
                     : 'Low usage' %>
               <% const copierTierIconClass =
                 copierIndex < topBandEndIndex
-                  ? 'fa-solid fa-fire has-text-danger'
+                  ? 'fa-solid fa-file has-text-danger'
                   : copierIndex < middleBandEndIndex
-                    ? 'fa-solid fa-minus has-text-warning-dark'
-                    : 'fa-solid fa-arrow-down has-text-success-dark' %>
+                    ? 'fa-solid fa-file has-text-warning'
+                    : 'fa-solid fa-file has-text-success' %>
               <div class="column is-half-tablet is-one-third-desktop js-copier-option">
                 <label class="checkbox is-block p-2 <%= copierBandClass %>">
                   <input
