@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title><%= headTitle %></title>
+    <title>Office Copier Challenge</title>
 
     <link href="<%= urlPrefix %>/lib/bulma/bulma.min.css" rel="stylesheet" />
     <link href="<%= urlPrefix %>/stylesheets/style.css" rel="stylesheet" />
@@ -18,7 +18,7 @@
     <section class="section">
       <div class="container is-fluid">
         <div class="box mb-4">
-          <h1 class="is-size-5 has-text-weight-semibold mb-2"><%= headTitle %></h1>
+          <h1 class="is-size-5 has-text-weight-semibold mb-2">Office Copier Challenge</h1>
 
           <div class="level">
             <div class="level-left">
@@ -110,11 +110,39 @@
         </div>
 
         <div class="box has-text-centered mb-4">
+          <a href="#" id="aboutLink">About this Challenge</a>
+          <span class="mx-2">&middot;</span>
           <a href="#" id="tipsLink">Tips to Reduce your Prints</a>
         </div>
 
       </div>
     </section>
+
+    <div id="aboutModal" class="modal">
+      <div class="modal-background js-about-modal-close"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">Office Copier Challenge</p>
+          <button class="delete js-about-modal-close" aria-label="close" type="button"></button>
+        </header>
+        <section class="modal-card-body">
+          <p class="mb-3 has-text-centered">
+            <img src="images/greenTeam.jpg" alt="Green Team Logo" />
+          </p>
+          <p class="mb-3">
+            <strong class="has-text-success-dark">The Green Team</strong> has challenged all departments to increase their sustainability efforts in their workplaces.
+            IT is up for the challenge and has created this dashboard to help everyone understand
+            their department's printing habits and identify opportunities to reduce paper use.
+          </p>
+          <p>
+            Use the dashboard to compare printing trends and identify opportunities to print less.
+          </p>
+        </section>
+        <footer class="modal-card-foot is-justify-content-end">
+          <button class="button js-about-modal-close" type="button">Close</button>
+        </footer>
+      </div>
+    </div>
 
     <div id="tipsModal" class="modal">
       <div class="modal-background js-tips-modal-close"></div>

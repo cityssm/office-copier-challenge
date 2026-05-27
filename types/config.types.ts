@@ -1,6 +1,5 @@
 export interface Config {
   application: {
-    applicationName?: string
     httpPort?: number
   }
 

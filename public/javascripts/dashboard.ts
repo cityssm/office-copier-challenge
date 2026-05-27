@@ -233,6 +233,30 @@ function formatHourAmPm(date: Date): string {
     updateCopierVisibility()
   })
 
+  const aboutModalElement = document.querySelector('#aboutModal')
+  const aboutModalCloseElements = document.querySelectorAll('.js-about-modal-close')
+
+  if (aboutModalElement instanceof HTMLDivElement) {
+    const openAboutModal = (): void => {
+      aboutModalElement.classList.add('is-active')
+    }
+
+    const closeAboutModal = (): void => {
+      aboutModalElement.classList.remove('is-active')
+    }
+
+    document.querySelector('#aboutLink')?.addEventListener('click', (event) => {
+      event.preventDefault()
+      openAboutModal()
+    })
+
+    for (const closeElement of aboutModalCloseElements) {
+      closeElement.addEventListener('click', closeAboutModal)
+    }
+
+    openAboutModal()
+  }
+
   const tipsModalElement = document.querySelector('#tipsModal')
   const tipsModalCloseElements = document.querySelectorAll('.js-tips-modal-close')
 
