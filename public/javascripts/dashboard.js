@@ -4,6 +4,9 @@ const DAY_MILLIS = 24 * HOUR_MILLIS;
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
+function normalizeToDay(timeMillis) {
+    return Math.floor(timeMillis / DAY_MILLIS) * DAY_MILLIS;
+}
 function buildHourlyDeltaSeries(hourlyCounts) {
     const maximumCountByHour = new Map();
     for (const hourlyCount of hourlyCounts) {
@@ -27,6 +30,21 @@ function buildHourlyDeltaSeries(hourlyCounts) {
         previousCountValue = countValue;
     }
     return deltaSeries;
+}
+function buildDailyDeltaSeries(hourlyCounts) {
+    const hourlyDeltas = buildHourlyDeltaSeries(hourlyCounts);
+    const dailyPrints = new Map();
+    for (const [timeMillis, prints] of hourlyDeltas) {
+        const dayStartMillis = normalizeToDay(timeMillis);
+        dailyPrints.set(dayStartMillis, (dailyPrints.get(dayStartMillis) ?? 0) + prints);
+    }
+    return [...dailyPrints.entries()].toSorted(([dayA], [dayB]) => dayA - dayB);
+}
+function formatHourAmPm(date) {
+    const hours = date.getHours();
+    const ampm = hours < 12 ? 'am' : 'pm';
+    const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+    return `${hour12}${ampm}`;
 }
 ;
 (() => {
@@ -55,6 +73,7 @@ function buildHourlyDeltaSeries(hourlyCounts) {
     const updateChart = () => {
         const selectedDurationDays = Number(chartDurationDaysElement.value);
         const cutoffMillis = Date.now() - (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS;
+        const useDailyCounts = selectedDurationDays === 30 || selectedDurationDays === 60;
         const selectedCopierIds = [
             ...document.querySelectorAll('.js-copier-checkbox:checked')
         ].map((checkboxElement) => Number(checkboxElement.value));
@@ -71,17 +90,26 @@ function buildHourlyDeltaSeries(hourlyCounts) {
                 type: 'scroll'
             },
             xAxis: {
-                type: 'time'
+                type: 'time',
+                axisLabel: useDailyCounts
+                    ? {}
+                    : {
+                        formatter: (value) => {
+                            return formatHourAmPm(new Date(value));
+                        }
+                    }
             },
             yAxis: {
                 type: 'value',
-                name: 'Hourly Prints'
+                name: useDailyCounts ? 'Daily Prints' : 'Hourly Prints'
             },
             series: selectedCopiers.map((copier) => ({
                 name: copier.copierName,
                 type: 'line',
                 showSymbol: false,
-                data: buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
+                data: useDailyCounts
+                    ? buildDailyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
+                    : buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
             }))
         });
     };
@@ -118,6 +146,23 @@ function buildHourlyDeltaSeries(hourlyCounts) {
         updateHiddenCopiersButton();
         updateCopierVisibility();
     });
+    const tipsModalElement = document.querySelector('#tipsModal');
+    const tipsModalCloseElements = document.querySelectorAll('.js-tips-modal-close');
+    if (tipsModalElement instanceof HTMLDivElement) {
+        const openTipsModal = () => {
+            tipsModalElement.classList.add('is-active');
+        };
+        const closeTipsModal = () => {
+            tipsModalElement.classList.remove('is-active');
+        };
+        document.querySelector('#tipsLink')?.addEventListener('click', (event) => {
+            event.preventDefault();
+            openTipsModal();
+        });
+        for (const closeElement of tipsModalCloseElements) {
+            closeElement.addEventListener('click', closeTipsModal);
+        }
+    }
     updateHiddenCopiersButton();
     updateChart();
     updateCopierVisibility();

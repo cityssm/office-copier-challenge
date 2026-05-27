@@ -1,7 +1,7 @@
 import getCopierHourlyMaximums from '../database/getCopierHourlyMaximums.js';
 import getCopiers from '../database/getCopiers.js';
 import { getConfigProperty } from '../helpers/config.helpers.js';
-const DEFAULT_COPIER_COUNT = 10;
+const DEFAULT_COPIER_COUNT = 9;
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
 const MAX_DAYS = 60;
@@ -85,11 +85,19 @@ export default function handler(_request, response) {
     }
     const sortedByMostUsed = copierData.toSorted(compareByMostPrints);
     const nowMillis = Date.now();
-    const durationOptions = DURATION_PRESETS.filter((durationPreset) => hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis >=
-        nowMillis - durationPreset.days * DAY_MILLIS));
-    const defaultDurationDays = durationOptions.length > 0
-        ? durationOptions[durationOptions.length - 1].days
-        : MAX_DAYS;
+    const durationOptions = DURATION_PRESETS.filter((durationPreset) => {
+        if (durationPreset.days === 30 || durationPreset.days === 60) {
+            return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis <
+                nowMillis - durationPreset.days * DAY_MILLIS);
+        }
+        return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis >=
+            nowMillis - durationPreset.days * DAY_MILLIS);
+    });
+    const defaultDurationDays = durationOptions.some((o) => o.days === 7)
+        ? 7
+        : durationOptions.length > 0
+            ? durationOptions[0].days
+            : MAX_DAYS;
     const defaultDurationLabel = durationOptions.find((durationOption) => durationOption.days === defaultDurationDays)
         ?.label ?? 'Past 60 Days';
     const defaultCopierIds = sortedByMostUsed
