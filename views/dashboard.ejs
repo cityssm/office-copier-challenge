@@ -10,39 +10,49 @@
     <title><%= headTitle %></title>
 
     <link href="<%= urlPrefix %>/lib/bulma/bulma.min.css" rel="stylesheet" />
+    <link href="<%= urlPrefix %>/stylesheets/style.css" rel="stylesheet" />
     <link href="<%= urlPrefix %>/lib/fa/css/all.min.css" rel="stylesheet" />
   </head>
 
   <body>
     <section class="section">
       <div class="container is-fluid">
-        <h1 class="title is-3"><%= headTitle %></h1>
-
         <div class="box mb-4">
-          <p class="is-size-5 has-text-weight-semibold mb-2">Copiers to display</p>
-          <p class="has-text-grey mb-4">
-            Default selection is the 10 most used copiers in the <%= durationLabel.toLowerCase() %>.
-          </p>
+          <h1 class="is-size-5 has-text-weight-semibold mb-2"><%= headTitle %></h1>
 
-          <div class="field mb-4">
-            <label class="label is-small" for="chartDurationDays">Data to display</label>
-            <div class="control">
-              <div class="select is-small">
-                <select id="chartDurationDays">
-                  <% if (dashboardData.durationOptions.length === 0) { %>
-                    <option value="<%= dashboardData.defaultDurationDays %>" selected>No data available</option>
-                  <% } else { %>
-                    <% for (const durationOption of dashboardData.durationOptions) { %>
-                      <option
-                        value="<%= durationOption.days %>"
-                        <%= durationOption.days === dashboardData.defaultDurationDays ? 'selected' : '' %>
-                      >
-                        <%= durationOption.label %>
-                      </option>
-                    <% } %>
-                  <% } %>
-                </select>
+          <div class="level">
+            <div class="level-left">
+              <div class="field mb-4">
+                <label class="label is-small" for="chartDurationDays">Data to display</label>
+                <div class="control">
+                  <div class="select is-small">
+                    <select id="chartDurationDays">
+                      <% if (dashboardData.durationOptions.length === 0) { %>
+                        <option value="<%= dashboardData.defaultDurationDays %>" selected>No data available</option>
+                      <% } else { %>
+                        <% for (const durationOption of dashboardData.durationOptions) { %>
+                          <option
+                            value="<%= durationOption.days %>"
+                            <%= durationOption.days === dashboardData.defaultDurationDays ? 'selected' : '' %>
+                          >
+                            <%= durationOption.label %>
+                          </option>
+                        <% } %>
+                      <% } %>
+                    </select>
+                  </div>
+                </div>
               </div>
+            </div>
+            <div class="level-right">
+              <button
+                id="toggleHiddenCopiers"
+                class="button is-small is-light mt-4"
+                type="button"
+                aria-pressed="false"
+              >
+                Show hidden copiers
+              </button>
             </div>
           </div>
 
@@ -92,14 +102,7 @@
             <% } %>
           </div>
 
-          <button
-            id="toggleHiddenCopiers"
-            class="button is-small is-light mt-4"
-            type="button"
-            aria-pressed="false"
-          >
-            Show hidden copiers
-          </button>
+          
         </div>
 
         <div class="box mb-4">
