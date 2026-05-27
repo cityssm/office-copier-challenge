@@ -79,17 +79,22 @@
                   : copierIndex < middleBandEndIndex
                     ? 'Medium usage'
                     : 'Low usage' %>
-              <% const copierTierIconTransforms = ['up-2 left-2 shrink-1', 'up-4 left-4 shrink-2'] %>
-              <% const copierTierIconConfig = {
+              <% const mediumTierTransform = 'up-2 left-2 shrink-1' %>
+              <% const highTierTransforms = [mediumTierTransform, 'up-4 left-4 shrink-2'] %>
+              <% let copierTierIconConfig = {
                 iconClass: 'has-text-success',
                 transforms: []
               } %>
               <% if (copierIndex < topBandEndIndex) { %>
-                <% copierTierIconConfig.iconClass = 'has-text-danger' %>
-                <% copierTierIconConfig.transforms = copierTierIconTransforms %>
+                <% copierTierIconConfig = {
+                  iconClass: 'has-text-danger',
+                  transforms: highTierTransforms
+                } %>
               <% } else if (copierIndex < middleBandEndIndex) { %>
-                <% copierTierIconConfig.iconClass = 'has-text-warning' %>
-                <% copierTierIconConfig.transforms = [copierTierIconTransforms[0]] %>
+                <% copierTierIconConfig = {
+                  iconClass: 'has-text-warning',
+                  transforms: [mediumTierTransform]
+                } %>
               <% } %>
               <div class="column is-half-tablet is-one-third-desktop js-copier-option">
                 <label class="checkbox is-block p-2 <%= copierBandClass %>">
