@@ -56,7 +56,7 @@ function onListening(server: http.Server): void {
  * Initialize HTTP
  */
 
-process.title = `${getConfigProperty('application.applicationName')} (Worker)`
+process.title = 'Office Copier Challenge (Worker)'
 
 const httpPort = getConfigProperty('application.httpPort')
 

@@ -9,7 +9,6 @@ import exitHook, { gracefulExit } from 'exit-hook'
 
 import { initializeDatabase } from './database/initializeDatabase.js'
 import { DEBUG_ENABLE_NAMESPACES, DEBUG_NAMESPACE } from './debug.config.js'
-import { getConfigProperty } from './helpers/config.helpers.js'
 import packageJson from './package.json' with { type: 'json' }
 
 if (process.env.NODE_ENV === 'development') {
@@ -25,9 +24,7 @@ function initializeCluster(): void {
 
   const processCount = Math.min(4, os.cpus().length * 2)
 
-  const applicationName = getConfigProperty('application.applicationName')
-
-  process.title = `${applicationName} (Primary)`
+  process.title = 'Office Copier Challenge (Primary)'
 
   debug(`Primary pid:   ${process.pid}`)
   debug(`Primary title: ${process.title}`)

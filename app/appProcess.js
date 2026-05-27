@@ -32,7 +32,7 @@ function onListening(server) {
         debug(`HTTP Listening on ${bind}`);
     }
 }
-process.title = `${getConfigProperty('application.applicationName')} (Worker)`;
+process.title = 'Office Copier Challenge (Worker)';
 const httpPort = getConfigProperty('application.httpPort');
 const httpServer = http.createServer(app);
 httpServer
