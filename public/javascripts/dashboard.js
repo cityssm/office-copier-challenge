@@ -121,7 +121,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
         return { copier, hourMap, hourlyDeltas };
     });
     const allHours = [...allHoursSet].toSorted((a, b) => a - b);
-    // KPI 1a: Busiest hour overall
     let busiestHourTime;
     let busiestHourTotal = 0;
     for (const timeMillis of allHours) {
@@ -134,7 +133,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
             busiestHourTime = timeMillis;
         }
     }
-    // KPI 1b: Busiest individual copier + hour
     let busiestCopierHour;
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
         for (const [timeMillis, prints] of hourlyDeltas) {
@@ -143,7 +141,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
         }
     }
-    // KPI 2a: Most consecutive hours as the top copier
     const hourTopCopierName = new Map();
     for (const timeMillis of allHours) {
         let topName;
@@ -179,7 +176,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
             longestTopCopier = currentTopCopier;
         }
     }
-    // KPI 2b: Most consecutive hours with copies > 0
     let longestActiveRun = 0;
     let longestActiveCopier;
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
@@ -199,7 +195,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
         }
     }
-    // KPI 3: Most consecutive hours with fewer than 5 copies
     let longestLowRun = 0;
     let longestLowTotal = 0;
     let longestLowCopier;
