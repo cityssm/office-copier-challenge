@@ -3,7 +3,8 @@ const DAY_MILLIS = 24 * HOUR_MILLIS;
 const DEFAULT_SELECTED_COPIER_COUNT = 9;
 const SELECTED_COPIER_IDS_STORAGE_KEY = 'office-copier-challenge.selectedCopierIds';
 const LOW_PRINT_THRESHOLD = 5;
-const ESTIMATED_PAGE_COUNT_FACTOR = 0.75;
+const SINGLE_SIDED_PRINT_SHARE = 0.5;
+const DOUBLE_SIDED_PRINT_SHARE = 0.5;
 const PAGES_PER_REAM = 500;
 const REAMS_PER_CARTON = 10;
 const TREES_PER_CARTON = 0.6;
@@ -89,7 +90,8 @@ function formatFractionalEstimate(value) {
     });
 }
 function calculateEstimatedPaperImpact(totalPrints) {
-    const estimatedPages = Math.round(totalPrints * ESTIMATED_PAGE_COUNT_FACTOR);
+    const estimatedPages = Math.round(totalPrints * SINGLE_SIDED_PRINT_SHARE +
+        (totalPrints * DOUBLE_SIDED_PRINT_SHARE) / 2);
     const estimatedReams = estimatedPages / PAGES_PER_REAM;
     const estimatedCartons = estimatedReams / REAMS_PER_CARTON;
     const estimatedTrees = estimatedCartons * TREES_PER_CARTON;
