@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 
+import { millisecondsInOneHour } from "@cityssm/to-millis"
+
 const CANADIAN_HOLIDAY_DATES: Array<[number, number, number]> = [
   // Tuple format: [year, zeroIndexedMonth, dayOfMonth]
   // Keep this list aligned with the years covered by dashboard data.
@@ -59,4 +61,8 @@ export function getCanadianHolidayDayStartMillis(
   }
 
   return [...holidayDays].toSorted((dayA, dayB) => dayA - dayB)
+}
+
+export function normalizeToHour(timeMillis: number): number {
+  return Math.floor(timeMillis / millisecondsInOneHour) * millisecondsInOneHour
 }

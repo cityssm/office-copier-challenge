@@ -1,3 +1,4 @@
+import { millisecondsInOneHour } from "@cityssm/to-millis";
 const CANADIAN_HOLIDAY_DATES = [
     [2026, 0, 1],
     [2026, 1, 16],
@@ -42,4 +43,7 @@ export function getCanadianHolidayDayStartMillis(startMillis, endMillis) {
         }
     }
     return [...holidayDays].toSorted((dayA, dayB) => dayA - dayB);
+}
+export function normalizeToHour(timeMillis) {
+    return Math.floor(timeMillis / millisecondsInOneHour) * millisecondsInOneHour;
 }
