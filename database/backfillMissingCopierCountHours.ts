@@ -1,8 +1,7 @@
+import { millisecondsInOneHour } from '@cityssm/to-millis'
 import sqlite from 'better-sqlite3'
 
 import { copierDB } from '../helpers/database.helpers.js'
-
-const HOUR_MILLIS = 60 * 60 * 1000
 
 interface HourlyMaximumRow {
   copierId: number
@@ -54,7 +53,7 @@ export default function backfillMissingCopierCountHours(): number {
         hourStartMillis
     `)
     .all({
-      hourMillis: HOUR_MILLIS
+      hourMillis: millisecondsInOneHour
     }) as HourlyMaximumRow[]
 
   const backfillRows: BackfillCountRow[] = []
@@ -65,7 +64,8 @@ export default function backfillMissingCopierCountHours(): number {
       previousRow !== undefined &&
       previousRow.copierId === hourlyMaximumRow.copierId
     ) {
-      let missingHourStartMillis = previousRow.hourStartMillis + HOUR_MILLIS
+      let missingHourStartMillis =
+        previousRow.hourStartMillis + millisecondsInOneHour
 
       while (missingHourStartMillis < hourlyMaximumRow.hourStartMillis) {
         backfillRows.push({
@@ -75,7 +75,7 @@ export default function backfillMissingCopierCountHours(): number {
           countValue: previousRow.countValue
         })
 
-        missingHourStartMillis += HOUR_MILLIS
+        missingHourStartMillis += millisecondsInOneHour
       }
     }
 
@@ -87,7 +87,12 @@ export default function backfillMissingCopierCountHours(): number {
       INSERT INTO
         CopierCounts (copierId, timeMillis, countType, countValue)
       VALUES
-        (@copierId, @hourStartMillis, @countType, @countValue)
+        (
+          @copierId,
+          @hourStartMillis,
+          @countType,
+          @countValue
+        )
     `)
 
     const insertBackfillRows = database.transaction(

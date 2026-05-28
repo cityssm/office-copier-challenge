@@ -483,13 +483,11 @@ function computeKpisForRange(copiers, cutoffMillis) {
                     DAY_MILLIS
         };
     };
-    const getPrintCountByCopier = (cutoffMillis) => {
-        return dashboardData.copiers.map((copier) => ({
-            copierId: copier.copierId,
-            copierName: copier.copierName,
-            printCount: getPrintCountInRange(copier, cutoffMillis)
-        }));
-    };
+    const getPrintCountByCopier = (cutoffMillis) => dashboardData.copiers.map((copier) => ({
+        copierId: copier.copierId,
+        copierName: copier.copierName,
+        printCount: getPrintCountInRange(copier, cutoffMillis)
+    }));
     const getDefaultSelectedCopierIds = () => {
         const { cutoffMillis } = getDurationRange();
         return new Set(getPrintCountByCopier(cutoffMillis)
@@ -502,11 +500,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
             .slice(0, DEFAULT_SELECTED_COPIER_COUNT)
             .map((copier) => copier.copierId));
     };
-    const getSelectedCopierIds = () => {
-        return new Set([
-            ...document.querySelectorAll('.js-copier-checkbox:checked')
-        ].map((checkboxElement) => Number(checkboxElement.value)));
-    };
+    const getSelectedCopierIds = () => new Set([
+        ...document.querySelectorAll('.js-copier-checkbox:checked')
+    ].map((checkboxElement) => Number(checkboxElement.value)));
     const applySelectedCopierIds = (selectedCopierIds) => {
         for (const checkboxElement of checkboxElements) {
             checkboxElement.checked = selectedCopierIds.has(Number(checkboxElement.value));
@@ -560,13 +556,16 @@ function computeKpisForRange(copiers, cutoffMillis) {
         const formatCopierNames = (copierNames) => copierNames.join('\n');
         const formatPrintCount = (prints) => `${prints.toLocaleString()} prints`;
         const formatHourCount = (hours) => `${hours.toLocaleString()} ${hours === 1 ? 'hour' : 'hours'}`;
-        if (kpis.busiestHour !== undefined) {
-            setKpi('kpiBusiestHour', formatPrintCount(kpis.busiestHour.totalPrints), formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis)));
-        }
-        else {
+        if (kpis.busiestHour === undefined) {
             setKpi('kpiBusiestHour', noDataValue, noDataContext);
         }
-        if (kpis.busiestCopierHour !== undefined) {
+        else {
+            setKpi('kpiBusiestHour', formatPrintCount(kpis.busiestHour.totalPrints), formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis)));
+        }
+        if (kpis.busiestCopierHour === undefined) {
+            setKpi('kpiBusiestCopierHour', noDataValue, noDataContext);
+        }
+        else {
             const firstCopierHour = kpis.busiestCopierHour.copierHours[0];
             if (firstCopierHour === undefined) {
                 setKpi('kpiBusiestCopierHour', noDataValue, noDataContext);
@@ -577,39 +576,34 @@ function computeKpisForRange(copiers, cutoffMillis) {
                     .join('\n'));
             }
         }
-        else {
-            setKpi('kpiBusiestCopierHour', noDataValue, noDataContext);
-        }
-        if (kpis.mostConsecutiveTopCopier !== undefined) {
-            setKpi('kpiTopCopierStreak', formatHourCount(kpis.mostConsecutiveTopCopier.hours), formatCopierNames(kpis.mostConsecutiveTopCopier.copierNames));
-        }
-        else {
+        if (kpis.mostConsecutiveTopCopier === undefined) {
             setKpi('kpiTopCopierStreak', noDataValue, noDataContext);
         }
-        if (kpis.mostConsecutiveActiveHours !== undefined) {
-            setKpi('kpiActiveStreak', formatHourCount(kpis.mostConsecutiveActiveHours.hours), formatCopierNames(kpis.mostConsecutiveActiveHours.copierNames));
-        }
         else {
+            setKpi('kpiTopCopierStreak', formatHourCount(kpis.mostConsecutiveTopCopier.hours), formatCopierNames(kpis.mostConsecutiveTopCopier.copierNames));
+        }
+        if (kpis.mostConsecutiveActiveHours === undefined) {
             setKpi('kpiActiveStreak', noDataValue, noDataContext);
         }
-        if (kpis.mostConsecutiveLowPrint !== undefined) {
-            setKpi('kpiLowPrintStreak', formatHourCount(kpis.mostConsecutiveLowPrint.hours), formatCopierNames(kpis.mostConsecutiveLowPrint.copierStats.map((copierStats) => copierStats.copierName)));
-        }
         else {
+            setKpi('kpiActiveStreak', formatHourCount(kpis.mostConsecutiveActiveHours.hours), formatCopierNames(kpis.mostConsecutiveActiveHours.copierNames));
+        }
+        if (kpis.mostConsecutiveLowPrint === undefined) {
             setKpi('kpiLowPrintStreak', noDataValue, noDataContext);
         }
-        if (kpis.mostHoursLowPrintOverall !== undefined) {
-            setKpi('kpiLowPrintHours', formatHourCount(kpis.mostHoursLowPrintOverall.hours), formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames));
-        }
         else {
+            setKpi('kpiLowPrintStreak', formatHourCount(kpis.mostConsecutiveLowPrint.hours), formatCopierNames(kpis.mostConsecutiveLowPrint.copierStats.map((copierStats) => copierStats.copierName)));
+        }
+        if (kpis.mostHoursLowPrintOverall === undefined) {
             setKpi('kpiLowPrintHours', noDataValue, noDataContext);
         }
+        else {
+            setKpi('kpiLowPrintHours', formatHourCount(kpis.mostHoursLowPrintOverall.hours), formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames));
+        }
     };
-    const getPrintCountInRange = (copier, cutoffMillis) => {
-        return buildHourlyDeltaSeries(copier.hourlyCounts)
-            .filter(([timeMillis]) => timeMillis >= cutoffMillis)
-            .reduce((total, [, printCount]) => total + printCount, 0);
-    };
+    const getPrintCountInRange = (copier, cutoffMillis) => buildHourlyDeltaSeries(copier.hourlyCounts)
+        .filter(([timeMillis]) => timeMillis >= cutoffMillis)
+        .reduce((total, [, printCount]) => total + printCount, 0);
     const getCopierTierIndex = (copierIndex, copierCount) => {
         const baseBandSize = Math.floor(copierCount / 3);
         const remainderCount = copierCount % 3;

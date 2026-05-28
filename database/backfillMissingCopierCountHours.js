@@ -1,6 +1,6 @@
+import { millisecondsInOneHour } from '@cityssm/to-millis';
 import sqlite from 'better-sqlite3';
 import { copierDB } from '../helpers/database.helpers.js';
-const HOUR_MILLIS = 60 * 60 * 1000;
 export default function backfillMissingCopierCountHours() {
     const database = sqlite(copierDB);
     const hourlyMaximumRows = database
@@ -36,14 +36,14 @@ export default function backfillMissingCopierCountHours() {
         hourStartMillis
     `)
         .all({
-        hourMillis: HOUR_MILLIS
+        hourMillis: millisecondsInOneHour
     });
     const backfillRows = [];
     let previousRow;
     for (const hourlyMaximumRow of hourlyMaximumRows) {
         if (previousRow !== undefined &&
             previousRow.copierId === hourlyMaximumRow.copierId) {
-            let missingHourStartMillis = previousRow.hourStartMillis + HOUR_MILLIS;
+            let missingHourStartMillis = previousRow.hourStartMillis + millisecondsInOneHour;
             while (missingHourStartMillis < hourlyMaximumRow.hourStartMillis) {
                 backfillRows.push({
                     copierId: previousRow.copierId,
@@ -51,7 +51,7 @@ export default function backfillMissingCopierCountHours() {
                     countType: previousRow.countType,
                     countValue: previousRow.countValue
                 });
-                missingHourStartMillis += HOUR_MILLIS;
+                missingHourStartMillis += millisecondsInOneHour;
             }
         }
         previousRow = hourlyMaximumRow;
@@ -61,7 +61,12 @@ export default function backfillMissingCopierCountHours() {
       INSERT INTO
         CopierCounts (copierId, timeMillis, countType, countValue)
       VALUES
-        (@copierId, @hourStartMillis, @countType, @countValue)
+        (
+          @copierId,
+          @hourStartMillis,
+          @countType,
+          @countValue
+        )
     `);
         const insertBackfillRows = database.transaction((rows) => {
             for (const row of rows) {

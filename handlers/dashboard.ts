@@ -1,11 +1,10 @@
+import { millisecondsInOneDay, millisecondsInOneHour } from '@cityssm/to-millis'
 import type { Request, Response } from 'express'
 
 import getCopierHourlyMaximums from '../database/getCopierHourlyMaximums.js'
 import getCopiers from '../database/getCopiers.js'
 
 const DEFAULT_COPIER_COUNT = 9
-const HOUR_MILLIS = 60 * 60 * 1000
-const DAY_MILLIS = 24 * HOUR_MILLIS
 const MAX_DAYS = 60
 
 const DURATION_PRESETS = [
@@ -68,7 +67,7 @@ function getHourlyMaximumValues(
 }
 
 function normalizeToHour(timeMillis: number): number {
-  return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS
+  return Math.floor(timeMillis / millisecondsInOneHour) * millisecondsInOneHour
 }
 
 function normalizeToLocalDay(timeMillis: number): number {
@@ -197,14 +196,14 @@ export default function handler(_request: Request, response: Response): void {
       return hourlyMaximums.some(
         (hourlyMaximum) =>
           hourlyMaximum.hourStartMillis <=
-          nowMillis - durationPreset.days * DAY_MILLIS
+          nowMillis - durationPreset.days * millisecondsInOneDay
       )
     }
 
     return hourlyMaximums.some(
       (hourlyMaximum) =>
         hourlyMaximum.hourStartMillis >=
-        nowMillis - durationPreset.days * DAY_MILLIS
+        nowMillis - durationPreset.days * millisecondsInOneDay
     )
   }) as DashboardDurationOption[]
 
@@ -223,7 +222,7 @@ export default function handler(_request: Request, response: Response): void {
     .slice(0, DEFAULT_COPIER_COUNT)
     .map((copier) => copier.copierId)
   const holidayDayStartMillis = getCanadianHolidayDayStartMillis(
-    nowMillis - MAX_DAYS * DAY_MILLIS,
+    nowMillis - MAX_DAYS * millisecondsInOneDay,
     nowMillis
   )
 

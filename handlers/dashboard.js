@@ -1,8 +1,7 @@
+import { millisecondsInOneDay, millisecondsInOneHour } from '@cityssm/to-millis';
 import getCopierHourlyMaximums from '../database/getCopierHourlyMaximums.js';
 import getCopiers from '../database/getCopiers.js';
 const DEFAULT_COPIER_COUNT = 9;
-const HOUR_MILLIS = 60 * 60 * 1000;
-const DAY_MILLIS = 24 * HOUR_MILLIS;
 const MAX_DAYS = 60;
 const DURATION_PRESETS = [
     {
@@ -37,7 +36,7 @@ function getHourlyMaximumValues(hourlyCounts) {
         .map(([timeMillis, countValue]) => ({ timeMillis, countValue }));
 }
 function normalizeToHour(timeMillis) {
-    return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
+    return Math.floor(timeMillis / millisecondsInOneHour) * millisecondsInOneHour;
 }
 function normalizeToLocalDay(timeMillis) {
     const date = new Date(timeMillis);
@@ -131,10 +130,10 @@ export default function handler(_request, response) {
     const durationOptions = DURATION_PRESETS.filter((durationPreset) => {
         if (durationPreset.days === 30 || durationPreset.days === 60) {
             return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis <=
-                nowMillis - durationPreset.days * DAY_MILLIS);
+                nowMillis - durationPreset.days * millisecondsInOneDay);
         }
         return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis >=
-            nowMillis - durationPreset.days * DAY_MILLIS);
+            nowMillis - durationPreset.days * millisecondsInOneDay);
     });
     const defaultDurationDays = durationOptions.some((o) => o.days === 7)
         ? 7
@@ -145,7 +144,7 @@ export default function handler(_request, response) {
     const defaultCopierIds = sortedByMostUsed
         .slice(0, DEFAULT_COPIER_COUNT)
         .map((copier) => copier.copierId);
-    const holidayDayStartMillis = getCanadianHolidayDayStartMillis(nowMillis - MAX_DAYS * DAY_MILLIS, nowMillis);
+    const holidayDayStartMillis = getCanadianHolidayDayStartMillis(nowMillis - MAX_DAYS * millisecondsInOneDay, nowMillis);
     const dashboardData = {
         copiers: sortedByMostUsed,
         defaultCopierIds,

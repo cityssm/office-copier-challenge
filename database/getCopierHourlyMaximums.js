@@ -1,7 +1,7 @@
+import { daysToMillis, millisecondsInOneHour } from '@cityssm/to-millis';
 import sqlite from 'better-sqlite3';
 import { copierDB } from '../helpers/database.helpers.js';
-const HOUR_MILLIS = 60 * 60 * 1000;
-const SIXTY_DAYS_MILLIS = 60 * 24 * HOUR_MILLIS;
+const SIXTY_DAYS_MILLIS = daysToMillis(60);
 export default function getCopierHourlyMaximums() {
     const database = sqlite(copierDB);
     const result = database
@@ -33,7 +33,7 @@ export default function getCopierHourlyMaximums() {
         c.copierName
     `)
         .all({
-        hourMillis: HOUR_MILLIS,
+        hourMillis: millisecondsInOneHour,
         timeMillisCutoff: Date.now() - SIXTY_DAYS_MILLIS
     });
     database.close();

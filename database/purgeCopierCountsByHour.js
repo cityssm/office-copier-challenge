@@ -1,6 +1,6 @@
+import { millisecondsInOneHour } from '@cityssm/to-millis';
 import sqlite from 'better-sqlite3';
 import { copierDB } from '../helpers/database.helpers.js';
-const HOUR_MILLIS = 60 * 60 * 1000;
 export default function purgeCopierCountsByHour() {
     const database = sqlite(copierDB);
     const result = database
@@ -31,7 +31,7 @@ export default function purgeCopierCountsByHour() {
         )
     `)
         .run({
-        hourMillis: HOUR_MILLIS
+        hourMillis: millisecondsInOneHour
     });
     database.close();
     return result.changes;

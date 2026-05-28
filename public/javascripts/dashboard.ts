@@ -807,13 +807,12 @@ function computeKpisForRange(
     copierId: number
     copierName: string
     printCount: number
-  }> => {
-    return dashboardData.copiers.map((copier) => ({
+  }> =>
+    dashboardData.copiers.map((copier) => ({
       copierId: copier.copierId,
       copierName: copier.copierName,
       printCount: getPrintCountInRange(copier, cutoffMillis)
     }))
-  }
 
   const getDefaultSelectedCopierIds = (): Set<number> => {
     const { cutoffMillis } = getDurationRange()
@@ -832,15 +831,14 @@ function computeKpisForRange(
     )
   }
 
-  const getSelectedCopierIds = (): Set<number> => {
-    return new Set(
+  const getSelectedCopierIds = (): Set<number> =>
+    new Set(
       [
         ...document.querySelectorAll<HTMLInputElement>(
           '.js-copier-checkbox:checked'
         )
       ].map((checkboxElement) => Number(checkboxElement.value))
     )
-  }
 
   const applySelectedCopierIds = (selectedCopierIds: Set<number>): void => {
     for (const checkboxElement of checkboxElements) {
@@ -922,17 +920,19 @@ function computeKpisForRange(
     const formatHourCount = (hours: number): string =>
       `${hours.toLocaleString()} ${hours === 1 ? 'hour' : 'hours'}`
 
-    if (kpis.busiestHour !== undefined) {
+    if (kpis.busiestHour === undefined) {
+      setKpi('kpiBusiestHour', noDataValue, noDataContext)
+    } else {
       setKpi(
         'kpiBusiestHour',
         formatPrintCount(kpis.busiestHour.totalPrints),
         formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis))
       )
-    } else {
-      setKpi('kpiBusiestHour', noDataValue, noDataContext)
     }
 
-    if (kpis.busiestCopierHour !== undefined) {
+    if (kpis.busiestCopierHour === undefined) {
+      setKpi('kpiBusiestCopierHour', noDataValue, noDataContext)
+    } else {
       const firstCopierHour = kpis.busiestCopierHour.copierHours[0]
 
       if (firstCopierHour === undefined) {
@@ -949,31 +949,31 @@ function computeKpisForRange(
             .join('\n')
         )
       }
-    } else {
-      setKpi('kpiBusiestCopierHour', noDataValue, noDataContext)
     }
 
-    if (kpis.mostConsecutiveTopCopier !== undefined) {
+    if (kpis.mostConsecutiveTopCopier === undefined) {
+      setKpi('kpiTopCopierStreak', noDataValue, noDataContext)
+    } else {
       setKpi(
         'kpiTopCopierStreak',
         formatHourCount(kpis.mostConsecutiveTopCopier.hours),
         formatCopierNames(kpis.mostConsecutiveTopCopier.copierNames)
       )
-    } else {
-      setKpi('kpiTopCopierStreak', noDataValue, noDataContext)
     }
 
-    if (kpis.mostConsecutiveActiveHours !== undefined) {
+    if (kpis.mostConsecutiveActiveHours === undefined) {
+      setKpi('kpiActiveStreak', noDataValue, noDataContext)
+    } else {
       setKpi(
         'kpiActiveStreak',
         formatHourCount(kpis.mostConsecutiveActiveHours.hours),
         formatCopierNames(kpis.mostConsecutiveActiveHours.copierNames)
       )
-    } else {
-      setKpi('kpiActiveStreak', noDataValue, noDataContext)
     }
 
-    if (kpis.mostConsecutiveLowPrint !== undefined) {
+    if (kpis.mostConsecutiveLowPrint === undefined) {
+      setKpi('kpiLowPrintStreak', noDataValue, noDataContext)
+    } else {
       setKpi(
         'kpiLowPrintStreak',
         formatHourCount(kpis.mostConsecutiveLowPrint.hours),
@@ -983,29 +983,26 @@ function computeKpisForRange(
           )
         )
       )
-    } else {
-      setKpi('kpiLowPrintStreak', noDataValue, noDataContext)
     }
 
-    if (kpis.mostHoursLowPrintOverall !== undefined) {
+    if (kpis.mostHoursLowPrintOverall === undefined) {
+      setKpi('kpiLowPrintHours', noDataValue, noDataContext)
+    } else {
       setKpi(
         'kpiLowPrintHours',
         formatHourCount(kpis.mostHoursLowPrintOverall.hours),
         formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames)
       )
-    } else {
-      setKpi('kpiLowPrintHours', noDataValue, noDataContext)
     }
   }
 
   const getPrintCountInRange = (
     copier: DashboardCopier,
     cutoffMillis: number
-  ): number => {
-    return buildHourlyDeltaSeries(copier.hourlyCounts)
+  ): number =>
+    buildHourlyDeltaSeries(copier.hourlyCounts)
       .filter(([timeMillis]) => timeMillis >= cutoffMillis)
       .reduce((total, [, printCount]) => total + printCount, 0)
-  }
 
   const getCopierTierIndex = (
     copierIndex: number,
