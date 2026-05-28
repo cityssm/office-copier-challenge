@@ -4,6 +4,7 @@ import type { EChartsType } from 'echarts/types/dist/echarts'
 
 const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
+
 const DEFAULT_SELECTED_COPIER_COUNT = 9
 const SELECTED_COPIER_IDS_STORAGE_KEY =
   'office-copier-challenge.selectedCopierIds'
@@ -735,6 +736,7 @@ function computeKpisForRange(
       animation: false,
       tooltip: {
         trigger: 'axis',
+
         formatter: (
           tooltipItems: Array<{
             axisValue: number
@@ -777,12 +779,15 @@ function computeKpisForRange(
           ].join('<br/>')
         }
       },
+
       legend: {
         type: 'scroll',
         selectedMode: false
       },
+
       xAxis: {
         type: 'time',
+
         axisLabel: useDailyCounts
           ? {}
           : {
@@ -793,6 +798,7 @@ function computeKpisForRange(
         type: 'value',
         name: useDailyCounts ? 'Daily Prints' : 'Hourly Prints'
       },
+
       series
     })
   }
