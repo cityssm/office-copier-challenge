@@ -456,7 +456,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
                         `${timeHeader} · Total: ${totalPrintCount.toLocaleString()} ${totalPrintLabel}`,
                         ...printCountBySeries.map((point) => {
                             const pointLine = `${point.marker} ${point.seriesName}: ${point.printCount.toLocaleString()}`;
-                            return point.printCount === topSeriesPrintCount
+                            return topSeriesPrintCount > 0 &&
+                                point.printCount === topSeriesPrintCount
                                 ? `<strong>${pointLine}</strong>`
                                 : pointLine;
                         })
