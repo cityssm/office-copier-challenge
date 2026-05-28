@@ -1,6 +1,7 @@
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
 const DEFAULT_SELECTED_COPIER_COUNT = 9;
+const SELECTED_COPIER_IDS_STORAGE_KEY = 'office-copier-challenge.selectedCopierIds';
 const LOW_PRINT_THRESHOLD = 5;
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
@@ -316,7 +317,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
     }));
     const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0);
     const mostLowPrintHourCopierNames = mostLowPrintHours > 0
-        // Show all copiers tied on low-print hour counts.
         ? [...lowPrintHoursByCopierName.entries()]
             .filter(([, hourCount]) => hourCount === mostLowPrintHours)
             .map(([copierName]) => copierName)
@@ -357,6 +357,14 @@ function computeKpisForRange(copiers, cutoffMillis) {
     }
     const toggleHiddenCopiersElement = document.querySelector('#toggleHiddenCopiers');
     if (!(toggleHiddenCopiersElement instanceof HTMLButtonElement)) {
+        return;
+    }
+    const selectAllCopiersElement = document.querySelector('#selectAllCopiers');
+    const deselectAllCopiersElement = document.querySelector('#deselectAllCopiers');
+    const resetCopierSelectionElement = document.querySelector('#resetCopierSelection');
+    if (!(selectAllCopiersElement instanceof HTMLButtonElement) ||
+        !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
+        !(resetCopierSelectionElement instanceof HTMLButtonElement)) {
         return;
     }
     const dashboardData = JSON.parse(dashboardDataElement.text);
@@ -448,93 +456,16 @@ function computeKpisForRange(copiers, cutoffMillis) {
                     DAY_MILLIS
         };
     };
-    const updateKpis = () => {
-        const kpiSectionElement = document.querySelector('#kpiSection');
-        if (!(kpiSectionElement instanceof HTMLElement)) {
-            return;
-        }
-        const { cutoffMillis } = getDurationRange();
-        const kpis = computeKpisForRange(dashboardData.copiers, cutoffMillis);
-        const setKpiText = (id, text) => {
-            const element = document.querySelector(`#${id}`);
-            if (element instanceof HTMLElement) {
-                element.textContent = text;
-            }
-        };
-        const setKpiLines = (id, lines) => {
-            const element = document.querySelector(`#${id}`);
-            if (!(element instanceof HTMLElement)) {
-                return;
-            }
-            element.textContent = '';
-            lines.forEach((line, index) => {
-                if (index > 0) {
-                    element.append(document.createElement('br'));
-                }
-                element.append(document.createTextNode(line));
-            });
-        };
-        const noData = 'No data available';
-        const hourWord = (count) => (count === 1 ? 'hour' : 'hours');
-        if (kpis.busiestHour !== undefined) {
-            setKpiText('kpiBusiestHour', `${formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis))} (${kpis.busiestHour.totalPrints.toLocaleString()} prints)`);
-        }
-        else {
-            setKpiText('kpiBusiestHour', noData);
-        }
-        if (kpis.busiestCopierHour !== undefined) {
-            setKpiLines('kpiBusiestCopierHour', kpis.busiestCopierHour.copierHours.map((copierHour) => `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))} (${kpis.busiestCopierHour.prints.toLocaleString()} prints)`));
-        }
-        else {
-            setKpiText('kpiBusiestCopierHour', noData);
-        }
-        if (kpis.mostConsecutiveTopCopier !== undefined) {
-            setKpiLines('kpiTopCopierStreak', kpis.mostConsecutiveTopCopier.copierNames.map((copierName) => `${copierName} (${kpis.mostConsecutiveTopCopier.hours} ${hourWord(kpis.mostConsecutiveTopCopier.hours)})`));
-        }
-        else {
-            setKpiText('kpiTopCopierStreak', noData);
-        }
-        if (kpis.mostConsecutiveActiveHours !== undefined) {
-            setKpiLines('kpiActiveStreak', kpis.mostConsecutiveActiveHours.copierNames.map((copierName) => `${copierName} (${kpis.mostConsecutiveActiveHours.hours} ${hourWord(kpis.mostConsecutiveActiveHours.hours)})`));
-        }
-        else {
-            setKpiText('kpiActiveStreak', noData);
-        }
-        if (kpis.mostConsecutiveLowPrint !== undefined) {
-            setKpiLines('kpiLowPrintStreak', kpis.mostConsecutiveLowPrint.copierStats.map((copierStats) => `${copierStats.copierName} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)}, ${copierStats.prints.toLocaleString()} prints)`));
-        }
-        else {
-            setKpiText('kpiLowPrintStreak', noData);
-        }
-        if (kpis.mostHoursLowPrintOverall !== undefined) {
-            setKpiLines('kpiLowPrintHours', kpis.mostHoursLowPrintOverall.copierNames.map((copierName) => `${copierName} (${kpis.mostHoursLowPrintOverall.hours} ${hourWord(kpis.mostHoursLowPrintOverall.hours)})`));
-        }
-        else {
-            setKpiText('kpiLowPrintHours', noData);
-        }
-    };
-    const getPrintCountInRange = (copier, cutoffMillis) => {
-        return buildHourlyDeltaSeries(copier.hourlyCounts)
-            .filter(([timeMillis]) => timeMillis >= cutoffMillis)
-            .reduce((total, [, printCount]) => total + printCount, 0);
-    };
-    const updateCopierCheckboxesForDuration = () => {
-        const { cutoffMillis } = getDurationRange();
-        const copierCounts = dashboardData.copiers.map((copier) => ({
+    const getPrintCountByCopier = (cutoffMillis) => {
+        return dashboardData.copiers.map((copier) => ({
             copierId: copier.copierId,
             copierName: copier.copierName,
             printCount: getPrintCountInRange(copier, cutoffMillis)
         }));
-        for (const copierCount of copierCounts) {
-            const checkboxElement = document.querySelector(`.js-copier-checkbox[value="${copierCount.copierId}"]`);
-            const countElement = checkboxElement
-                ?.closest('.js-copier-option')
-                ?.querySelector('.js-copier-count');
-            if (countElement instanceof HTMLSpanElement) {
-                countElement.textContent = copierCount.printCount.toLocaleString();
-            }
-        }
-        const selectedCopierIds = new Set(copierCounts
+    };
+    const getDefaultSelectedCopierIds = () => {
+        const { cutoffMillis } = getDurationRange();
+        return new Set(getPrintCountByCopier(cutoffMillis)
             .toSorted((copierA, copierB) => {
             if (copierB.printCount !== copierA.printCount) {
                 return copierB.printCount - copierA.printCount;
@@ -543,8 +474,124 @@ function computeKpisForRange(copiers, cutoffMillis) {
         })
             .slice(0, DEFAULT_SELECTED_COPIER_COUNT)
             .map((copier) => copier.copierId));
+    };
+    const getSelectedCopierIds = () => {
+        return new Set([...document.querySelectorAll('.js-copier-checkbox:checked')].map((checkboxElement) => Number(checkboxElement.value)));
+    };
+    const applySelectedCopierIds = (selectedCopierIds) => {
         for (const checkboxElement of checkboxElements) {
             checkboxElement.checked = selectedCopierIds.has(Number(checkboxElement.value));
+        }
+    };
+    const loadSelectedCopierIds = () => {
+        try {
+            const storedValue = window.localStorage.getItem(SELECTED_COPIER_IDS_STORAGE_KEY);
+            if (storedValue === null || storedValue === '') {
+                return;
+            }
+            const storedCopierIds = JSON.parse(storedValue);
+            if (!Array.isArray(storedCopierIds)) {
+                return;
+            }
+            const selectedCopierIds = storedCopierIds
+                .map((value) => Number(value))
+                .filter((copierId) => Number.isInteger(copierId) && copierDataById.has(copierId));
+            return new Set(selectedCopierIds);
+        }
+        catch {
+            return;
+        }
+    };
+    const storeSelectedCopierIds = () => {
+        try {
+            window.localStorage.setItem(SELECTED_COPIER_IDS_STORAGE_KEY, JSON.stringify([...getSelectedCopierIds()]));
+        }
+        catch {
+        }
+    };
+    const updateKpis = () => {
+        const kpiSectionElement = document.querySelector('#kpiSection');
+        if (!(kpiSectionElement instanceof HTMLElement)) {
+            return;
+        }
+        const { cutoffMillis } = getDurationRange();
+        const kpis = computeKpisForRange(dashboardData.copiers, cutoffMillis);
+        const setKpi = (idBase, value, context) => {
+            const valueElement = document.querySelector(`#${idBase}Value`);
+            const contextElement = document.querySelector(`#${idBase}Context`);
+            if (valueElement instanceof HTMLElement) {
+                valueElement.textContent = value;
+            }
+            if (contextElement instanceof HTMLElement) {
+                contextElement.textContent = context;
+            }
+        };
+        const noDataValue = '—';
+        const noDataContext = 'No data available';
+        const formatCopierNames = (copierNames) => copierNames.join('\n');
+        const formatPrintCount = (prints) => `${prints.toLocaleString()} prints`;
+        const formatHourCount = (hours) => `${hours.toLocaleString()} ${hours === 1 ? 'hour' : 'hours'}`;
+        if (kpis.busiestHour !== undefined) {
+            setKpi('kpiBusiestHour', formatPrintCount(kpis.busiestHour.totalPrints), formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis)));
+        }
+        else {
+            setKpi('kpiBusiestHour', noDataValue, noDataContext);
+        }
+        if (kpis.busiestCopierHour !== undefined) {
+            const firstCopierHour = kpis.busiestCopierHour.copierHours[0];
+            if (firstCopierHour === undefined) {
+                setKpi('kpiBusiestCopierHour', noDataValue, noDataContext);
+            }
+            else {
+                setKpi('kpiBusiestCopierHour', formatPrintCount(kpis.busiestCopierHour.prints), kpis.busiestCopierHour.copierHours
+                    .map((copierHour) => `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))}`)
+                    .join('\n'));
+            }
+        }
+        else {
+            setKpi('kpiBusiestCopierHour', noDataValue, noDataContext);
+        }
+        if (kpis.mostConsecutiveTopCopier !== undefined) {
+            setKpi('kpiTopCopierStreak', formatHourCount(kpis.mostConsecutiveTopCopier.hours), formatCopierNames(kpis.mostConsecutiveTopCopier.copierNames));
+        }
+        else {
+            setKpi('kpiTopCopierStreak', noDataValue, noDataContext);
+        }
+        if (kpis.mostConsecutiveActiveHours !== undefined) {
+            setKpi('kpiActiveStreak', formatHourCount(kpis.mostConsecutiveActiveHours.hours), formatCopierNames(kpis.mostConsecutiveActiveHours.copierNames));
+        }
+        else {
+            setKpi('kpiActiveStreak', noDataValue, noDataContext);
+        }
+        if (kpis.mostConsecutiveLowPrint !== undefined) {
+            setKpi('kpiLowPrintStreak', formatHourCount(kpis.mostConsecutiveLowPrint.hours), formatCopierNames(kpis.mostConsecutiveLowPrint.copierStats.map((copierStats) => copierStats.copierName)));
+        }
+        else {
+            setKpi('kpiLowPrintStreak', noDataValue, noDataContext);
+        }
+        if (kpis.mostHoursLowPrintOverall !== undefined) {
+            setKpi('kpiLowPrintHours', formatHourCount(kpis.mostHoursLowPrintOverall.hours), formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames));
+        }
+        else {
+            setKpi('kpiLowPrintHours', noDataValue, noDataContext);
+        }
+    };
+    const getPrintCountInRange = (copier, cutoffMillis) => {
+        return buildHourlyDeltaSeries(copier.hourlyCounts)
+            .filter(([timeMillis]) => timeMillis >= cutoffMillis)
+            .reduce((total, [, printCount]) => total + printCount, 0);
+    };
+    const updateCopierCountsForDuration = () => {
+        const { cutoffMillis } = getDurationRange();
+        const copierCounts = getPrintCountByCopier(cutoffMillis);
+        for (const copierCount of copierCounts) {
+            const checkboxElement = document.querySelector(`.js-copier-checkbox[value="${copierCount.copierId}"]`);
+            const countElement = checkboxElement
+                ?.closest('.js-copier-option')
+                ?.querySelector('.js-copier-count');
+            if (countElement instanceof HTMLSpanElement) {
+                countElement.textContent = copierCount.printCount.toLocaleString();
+            }
         }
     };
     const updateHiddenCopiersButton = () => {
@@ -564,13 +611,15 @@ function computeKpisForRange(copiers, cutoffMillis) {
     };
     for (const checkboxElement of checkboxElements) {
         checkboxElement.addEventListener('change', () => {
+            storeSelectedCopierIds();
             updateChart();
             updateCopierVisibility();
+            updateKpis();
         });
     }
     chartDurationDaysElement.value = String(dashboardData.defaultDurationDays);
     chartDurationDaysElement.addEventListener('change', () => {
-        updateCopierCheckboxesForDuration();
+        updateCopierCountsForDuration();
         updateChart();
         updateCopierVisibility();
         updateKpis();
@@ -585,6 +634,27 @@ function computeKpisForRange(copiers, cutoffMillis) {
         showHiddenCopiers = !showHiddenCopiers;
         updateHiddenCopiersButton();
         updateCopierVisibility();
+    });
+    selectAllCopiersElement.addEventListener('click', () => {
+        applySelectedCopierIds(new Set(dashboardData.copiers.map((copier) => copier.copierId)));
+        storeSelectedCopierIds();
+        updateChart();
+        updateCopierVisibility();
+        updateKpis();
+    });
+    deselectAllCopiersElement.addEventListener('click', () => {
+        applySelectedCopierIds(new Set());
+        storeSelectedCopierIds();
+        updateChart();
+        updateCopierVisibility();
+        updateKpis();
+    });
+    resetCopierSelectionElement.addEventListener('click', () => {
+        applySelectedCopierIds(getDefaultSelectedCopierIds());
+        storeSelectedCopierIds();
+        updateChart();
+        updateCopierVisibility();
+        updateKpis();
     });
     const aboutModalElement = document.querySelector('#aboutModal');
     const aboutModalCloseElements = document.querySelectorAll('.js-about-modal-close');
@@ -621,7 +691,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
             closeElement.addEventListener('click', closeTipsModal);
         }
     }
-    updateCopierCheckboxesForDuration();
+    updateCopierCountsForDuration();
+    const storedSelectedCopierIds = loadSelectedCopierIds();
+    applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds());
     updateHiddenCopiersButton();
     updateChart();
     updateCopierVisibility();

@@ -127,7 +127,7 @@ function startApplication(): void {
 
   const childProcesses = [
     fork(path.join('tasks', 'snmp.task.js')),
-    fork(path.join('tasks', 'purgeCounts.task.js'))
+    fork(path.join('tasks', 'databaseIntegrity.task.js'))
   ]
 
   exitHook(() => {

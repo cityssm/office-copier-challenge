@@ -21,7 +21,6 @@ export default function purgeCopierCountsByHour(): number {
                 ROW_NUMBER() OVER (
                   PARTITION BY
                     copierId,
-                    countType,
                     (timeMillis / @hourMillis)
                   ORDER BY
                     countValue DESC,

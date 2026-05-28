@@ -160,7 +160,13 @@
             <% } %>
           </div>
 
-          
+          <div class="buttons are-small mt-2">
+            <button id="selectAllCopiers" class="button is-light" type="button">Select all</button>
+            <button id="deselectAllCopiers" class="button is-light" type="button">Deselect all</button>
+            <button id="resetCopierSelection" class="button is-link is-light" type="button">
+              Reset to default
+            </button>
+          </div>
         </div>
 
         <div class="box mb-4">
@@ -168,54 +174,42 @@
         </div>
 
         <div class="box mb-4" id="kpiSection">
-          <div class="columns has-text-centered">
-            <div class="column">
-              <p class="is-size-6 has-text-weight-semibold mb-3">
-                <span class="icon has-text-danger">
-                  <i class="fa-solid fa-fire" aria-hidden="true"></i>
-                </span>
-                Heaviest Copy Times
-              </p>
-              <p class="mb-3">
-                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Busiest hour (all copiers)</span><br />
-                <span id="kpiBusiestHour">Loading&hellip;</span>
-              </p>
-              <p>
-                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Busiest copier &amp; hour</span><br />
-                <span id="kpiBusiestCopierHour">Loading&hellip;</span>
-              </p>
+          <div class="columns is-multiline has-text-centered">
+            <div class="column is-one-third-desktop">
+              <article class="kpi-card kpi-card-danger mb-5">
+                <p class="kpi-name">Busiest hour (all copiers)</p>
+                <p id="kpiBusiestHourValue" class="kpi-value">Loading&hellip;</p>
+                <p id="kpiBusiestHourContext" class="kpi-context"></p>
+              </article>
+              <article class="kpi-card kpi-card-danger">
+                <p class="kpi-name">Busiest copier &amp; hour</p>
+                <p id="kpiBusiestCopierHourValue" class="kpi-value">Loading&hellip;</p>
+                <p id="kpiBusiestCopierHourContext" class="kpi-context"></p>
+              </article>
             </div>
-            <div class="column">
-              <p class="is-size-6 has-text-weight-semibold mb-3">
-                <span class="icon has-text-warning">
-                  <i class="fa-solid fa-bolt" aria-hidden="true"></i>
-                </span>
-                Heaviest Usage
-              </p>
-              <p class="mb-3">
-                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Most consecutive hours with most copies</span><br />
-                <span id="kpiTopCopierStreak">Loading&hellip;</span>
-              </p>
-              <p>
-                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Most consecutive hours with copies &gt; 0</span><br />
-                <span id="kpiActiveStreak">Loading&hellip;</span>
-              </p>
+            <div class="column is-one-third-desktop">
+              <article class="kpi-card kpi-card-warning mb-5">
+                <p class="kpi-name">Most consecutive hours with most copies</p>
+                <p id="kpiTopCopierStreakValue" class="kpi-value">Loading&hellip;</p>
+                <p id="kpiTopCopierStreakContext" class="kpi-context"></p>
+              </article>
+              <article class="kpi-card kpi-card-warning">
+                <p class="kpi-name">Most consecutive hours with copies &gt; 0</p>
+                <p id="kpiActiveStreakValue" class="kpi-value">Loading&hellip;</p>
+                <p id="kpiActiveStreakContext" class="kpi-context"></p>
+              </article>
             </div>
-            <div class="column">
-              <p class="is-size-6 has-text-weight-semibold mb-3">
-                <span class="icon has-text-success">
-                  <i class="fa-solid fa-leaf" aria-hidden="true"></i>
-                </span>
-                Eco Champions
-              </p>
-              <p>
-                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Most consecutive hours with fewer than 5 copies</span><br />
-                <span id="kpiLowPrintStreak">Loading&hellip;</span>
-              </p>
-              <p class="mt-3">
-                <span class="is-size-7 has-text-weight-semibold has-text-grey-dark">Most hours overall with fewer than 5 copies</span><br />
-                <span id="kpiLowPrintHours">Loading&hellip;</span>
-              </p>
+            <div class="column is-one-third-desktop">
+              <article class="kpi-card kpi-card-success mb-5">
+                <p class="kpi-name">Most consecutive hours with fewer than 5 copies</p>
+                <p id="kpiLowPrintStreakValue" class="kpi-value">Loading&hellip;</p>
+                <p id="kpiLowPrintStreakContext" class="kpi-context"></p>
+              </article>
+              <article class="kpi-card kpi-card-success">
+                <p class="kpi-name">Most hours overall with fewer than 5 copies</p>
+                <p id="kpiLowPrintHoursValue" class="kpi-value">Loading&hellip;</p>
+                <p id="kpiLowPrintHoursContext" class="kpi-context"></p>
+              </article>
             </div>
           </div>
         </div>

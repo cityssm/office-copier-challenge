@@ -3,6 +3,7 @@ import type { EChartsType } from 'echarts/types/dist/echarts'
 const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
 const DEFAULT_SELECTED_COPIER_COUNT = 9
+const SELECTED_COPIER_IDS_STORAGE_KEY = 'office-copier-challenge.selectedCopierIds'
 const LOW_PRINT_THRESHOLD = 5
 
 interface DashboardPoint {
@@ -601,6 +602,20 @@ function computeKpisForRange(
     return
   }
 
+  const selectAllCopiersElement = document.querySelector('#selectAllCopiers')
+  const deselectAllCopiersElement = document.querySelector('#deselectAllCopiers')
+  const resetCopierSelectionElement = document.querySelector(
+    '#resetCopierSelection'
+  )
+
+  if (
+    !(selectAllCopiersElement instanceof HTMLButtonElement) ||
+    !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
+    !(resetCopierSelectionElement instanceof HTMLButtonElement)
+  ) {
+    return
+  }
+
   const dashboardData = JSON.parse(dashboardDataElement.text) as DashboardData
 
   const copierDataById = new Map<number, DashboardCopier>()
@@ -730,6 +745,90 @@ function computeKpisForRange(
     }
   }
 
+  const getPrintCountByCopier = (
+    cutoffMillis: number
+  ): Array<{
+    copierId: number
+    copierName: string
+    printCount: number
+  }> => {
+    return dashboardData.copiers.map((copier) => ({
+    copierId: copier.copierId,
+    copierName: copier.copierName,
+    printCount: getPrintCountInRange(copier, cutoffMillis)
+    }))
+  }
+
+  const getDefaultSelectedCopierIds = (): Set<number> => {
+    const { cutoffMillis } = getDurationRange()
+
+    return new Set(
+    getPrintCountByCopier(cutoffMillis)
+      .toSorted((copierA, copierB) => {
+        if (copierB.printCount !== copierA.printCount) {
+          return copierB.printCount - copierA.printCount
+        }
+
+        return copierA.copierName.localeCompare(copierB.copierName)
+      })
+      .slice(0, DEFAULT_SELECTED_COPIER_COUNT)
+      .map((copier) => copier.copierId)
+    )
+  }
+
+  const getSelectedCopierIds = (): Set<number> => {
+    return new Set(
+    [...document.querySelectorAll<HTMLInputElement>('.js-copier-checkbox:checked')].map(
+      (checkboxElement) => Number(checkboxElement.value)
+    )
+    )
+  }
+
+  const applySelectedCopierIds = (selectedCopierIds: Set<number>): void => {
+    for (const checkboxElement of checkboxElements) {
+    checkboxElement.checked = selectedCopierIds.has(Number(checkboxElement.value))
+    }
+  }
+
+  const loadSelectedCopierIds = (): Set<number> | undefined => {
+    try {
+    const storedValue = window.localStorage.getItem(
+      SELECTED_COPIER_IDS_STORAGE_KEY
+    )
+
+    if (storedValue === null || storedValue === '') {
+      return
+    }
+
+    const storedCopierIds = JSON.parse(storedValue) as unknown
+
+    if (!Array.isArray(storedCopierIds)) {
+      return
+    }
+
+    const selectedCopierIds = storedCopierIds
+      .map((value) => Number(value))
+      .filter(
+        (copierId) => Number.isInteger(copierId) && copierDataById.has(copierId)
+      )
+
+    return new Set(selectedCopierIds)
+    } catch {
+    return
+    }
+  }
+
+  const storeSelectedCopierIds = (): void => {
+    try {
+    window.localStorage.setItem(
+      SELECTED_COPIER_IDS_STORAGE_KEY,
+      JSON.stringify([...getSelectedCopierIds()])
+    )
+    } catch {
+    // localStorage may be blocked by browser settings
+    }
+  }
+
   const updateKpis = (): void => {
     const kpiSectionElement = document.querySelector('#kpiSection')
 
@@ -740,101 +839,101 @@ function computeKpisForRange(
     const { cutoffMillis } = getDurationRange()
     const kpis = computeKpisForRange(dashboardData.copiers, cutoffMillis)
 
-    const setKpiText = (id: string, text: string): void => {
-      const element = document.querySelector(`#${id}`)
-      if (element instanceof HTMLElement) {
-        element.textContent = text
+    const setKpi = (idBase: string, value: string, context: string): void => {
+      const valueElement = document.querySelector(`#${idBase}Value`)
+      const contextElement = document.querySelector(`#${idBase}Context`)
+
+      if (valueElement instanceof HTMLElement) {
+        valueElement.textContent = value
+      }
+
+      if (contextElement instanceof HTMLElement) {
+        contextElement.textContent = context
       }
     }
 
-    const setKpiLines = (id: string, lines: string[]): void => {
-      const element = document.querySelector(`#${id}`)
-
-      if (!(element instanceof HTMLElement)) {
-        return
-      }
-
-      element.textContent = ''
-
-      lines.forEach((line, index) => {
-        if (index > 0) {
-          element.append(document.createElement('br'))
-        }
-
-        element.append(document.createTextNode(line))
-      })
-    }
-
-    const noData = 'No data available'
-    const hourWord = (count: number): string => (count === 1 ? 'hour' : 'hours')
+    const noDataValue = '—'
+    const noDataContext = 'No data available'
+    const formatCopierNames = (copierNames: string[]): string =>
+      copierNames.join('\n')
+    const formatPrintCount = (prints: number): string =>
+      `${prints.toLocaleString()} prints`
+    const formatHourCount = (hours: number): string =>
+      `${hours.toLocaleString()} ${hours === 1 ? 'hour' : 'hours'}`
 
     if (kpis.busiestHour !== undefined) {
-      setKpiText(
+      setKpi(
         'kpiBusiestHour',
-        `${formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis))} (${kpis.busiestHour.totalPrints.toLocaleString()} prints)`
+        formatPrintCount(kpis.busiestHour.totalPrints),
+        formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis))
       )
     } else {
-      setKpiText('kpiBusiestHour', noData)
+      setKpi('kpiBusiestHour', noDataValue, noDataContext)
     }
 
     if (kpis.busiestCopierHour !== undefined) {
-      setKpiLines(
-        'kpiBusiestCopierHour',
-        kpis.busiestCopierHour.copierHours.map(
-          (copierHour) =>
-            `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))} (${kpis.busiestCopierHour.prints.toLocaleString()} prints)`
+      const firstCopierHour = kpis.busiestCopierHour.copierHours[0]
+
+      if (firstCopierHour === undefined) {
+        setKpi('kpiBusiestCopierHour', noDataValue, noDataContext)
+      } else {
+        setKpi(
+          'kpiBusiestCopierHour',
+          formatPrintCount(kpis.busiestCopierHour.prints),
+          kpis.busiestCopierHour.copierHours
+            .map(
+              (copierHour) =>
+                `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))}`
+            )
+            .join('\n')
         )
-      )
+      }
     } else {
-      setKpiText('kpiBusiestCopierHour', noData)
+      setKpi('kpiBusiestCopierHour', noDataValue, noDataContext)
     }
 
     if (kpis.mostConsecutiveTopCopier !== undefined) {
-      setKpiLines(
+      setKpi(
         'kpiTopCopierStreak',
-        kpis.mostConsecutiveTopCopier.copierNames.map(
-          (copierName) =>
-            `${copierName} (${kpis.mostConsecutiveTopCopier.hours} ${hourWord(kpis.mostConsecutiveTopCopier.hours)})`
-        )
+        formatHourCount(kpis.mostConsecutiveTopCopier.hours),
+        formatCopierNames(kpis.mostConsecutiveTopCopier.copierNames)
       )
     } else {
-      setKpiText('kpiTopCopierStreak', noData)
+      setKpi('kpiTopCopierStreak', noDataValue, noDataContext)
     }
 
     if (kpis.mostConsecutiveActiveHours !== undefined) {
-      setKpiLines(
+      setKpi(
         'kpiActiveStreak',
-        kpis.mostConsecutiveActiveHours.copierNames.map(
-          (copierName) =>
-            `${copierName} (${kpis.mostConsecutiveActiveHours.hours} ${hourWord(kpis.mostConsecutiveActiveHours.hours)})`
-        )
+        formatHourCount(kpis.mostConsecutiveActiveHours.hours),
+        formatCopierNames(kpis.mostConsecutiveActiveHours.copierNames)
       )
     } else {
-      setKpiText('kpiActiveStreak', noData)
+      setKpi('kpiActiveStreak', noDataValue, noDataContext)
     }
 
     if (kpis.mostConsecutiveLowPrint !== undefined) {
-      setKpiLines(
+      setKpi(
         'kpiLowPrintStreak',
-        kpis.mostConsecutiveLowPrint.copierStats.map(
-          (copierStats) =>
-            `${copierStats.copierName} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)}, ${copierStats.prints.toLocaleString()} prints)`
+        formatHourCount(kpis.mostConsecutiveLowPrint.hours),
+        formatCopierNames(
+          kpis.mostConsecutiveLowPrint.copierStats.map(
+            (copierStats) => copierStats.copierName
+          )
         )
       )
     } else {
-      setKpiText('kpiLowPrintStreak', noData)
+      setKpi('kpiLowPrintStreak', noDataValue, noDataContext)
     }
 
     if (kpis.mostHoursLowPrintOverall !== undefined) {
-      setKpiLines(
+      setKpi(
         'kpiLowPrintHours',
-        kpis.mostHoursLowPrintOverall.copierNames.map(
-          (copierName) =>
-            `${copierName} (${kpis.mostHoursLowPrintOverall.hours} ${hourWord(kpis.mostHoursLowPrintOverall.hours)})`
-        )
+        formatHourCount(kpis.mostHoursLowPrintOverall.hours),
+        formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames)
       )
     } else {
-      setKpiText('kpiLowPrintHours', noData)
+      setKpi('kpiLowPrintHours', noDataValue, noDataContext)
     }
   }
 
@@ -847,13 +946,9 @@ function computeKpisForRange(
       .reduce((total, [, printCount]) => total + printCount, 0)
   }
 
-  const updateCopierCheckboxesForDuration = (): void => {
+  const updateCopierCountsForDuration = (): void => {
     const { cutoffMillis } = getDurationRange()
-    const copierCounts = dashboardData.copiers.map((copier) => ({
-      copierId: copier.copierId,
-      copierName: copier.copierName,
-      printCount: getPrintCountInRange(copier, cutoffMillis)
-    }))
+    const copierCounts = getPrintCountByCopier(cutoffMillis)
 
     for (const copierCount of copierCounts) {
       const checkboxElement = document.querySelector<HTMLInputElement>(
@@ -866,23 +961,6 @@ function computeKpisForRange(
       if (countElement instanceof HTMLSpanElement) {
         countElement.textContent = copierCount.printCount.toLocaleString()
       }
-    }
-
-    const selectedCopierIds = new Set(
-      copierCounts
-        .toSorted((copierA, copierB) => {
-          if (copierB.printCount !== copierA.printCount) {
-            return copierB.printCount - copierA.printCount
-          }
-
-          return copierA.copierName.localeCompare(copierB.copierName)
-        })
-        .slice(0, DEFAULT_SELECTED_COPIER_COUNT)
-        .map((copier) => copier.copierId)
-    )
-
-    for (const checkboxElement of checkboxElements) {
-      checkboxElement.checked = selectedCopierIds.has(Number(checkboxElement.value))
     }
   }
 
@@ -913,14 +991,16 @@ function computeKpisForRange(
 
   for (const checkboxElement of checkboxElements) {
     checkboxElement.addEventListener('change', () => {
+      storeSelectedCopierIds()
       updateChart()
       updateCopierVisibility()
+      updateKpis()
     })
   }
 
   chartDurationDaysElement.value = String(dashboardData.defaultDurationDays)
   chartDurationDaysElement.addEventListener('change', () => {
-    updateCopierCheckboxesForDuration()
+    updateCopierCountsForDuration()
     updateChart()
     updateCopierVisibility()
     updateKpis()
@@ -937,6 +1017,32 @@ function computeKpisForRange(
     showHiddenCopiers = !showHiddenCopiers
     updateHiddenCopiersButton()
     updateCopierVisibility()
+  })
+
+  selectAllCopiersElement.addEventListener('click', () => {
+    applySelectedCopierIds(
+      new Set(dashboardData.copiers.map((copier) => copier.copierId))
+    )
+    storeSelectedCopierIds()
+    updateChart()
+    updateCopierVisibility()
+    updateKpis()
+  })
+
+  deselectAllCopiersElement.addEventListener('click', () => {
+    applySelectedCopierIds(new Set())
+    storeSelectedCopierIds()
+    updateChart()
+    updateCopierVisibility()
+    updateKpis()
+  })
+
+  resetCopierSelectionElement.addEventListener('click', () => {
+    applySelectedCopierIds(getDefaultSelectedCopierIds())
+    storeSelectedCopierIds()
+    updateChart()
+    updateCopierVisibility()
+    updateKpis()
   })
 
   const aboutModalElement = document.querySelector('#aboutModal')
@@ -985,7 +1091,11 @@ function computeKpisForRange(
     }
   }
 
-  updateCopierCheckboxesForDuration()
+  updateCopierCountsForDuration()
+
+  const storedSelectedCopierIds = loadSelectedCopierIds()
+  applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds())
+
   updateHiddenCopiersButton()
   updateChart()
   updateCopierVisibility()
