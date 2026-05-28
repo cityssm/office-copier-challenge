@@ -345,13 +345,13 @@ function computeKpisForRange(copiers, cutoffMillis) {
             ? undefined
             : { timeMillis: busiestHourTime, totalPrints: busiestHourTotal },
         busiestCopierHour,
-        mostConsecutiveTopCopier: longestTopCopierNames.length > 0
+        mostConsecutiveTopCopier: longestTopCopierNames.length > 0 && longestTopRun > 1
             ? { copierNames: longestTopCopierNames, hours: longestTopRun }
             : undefined,
-        mostConsecutiveActiveHours: longestActiveCopierNames.length > 0
+        mostConsecutiveActiveHours: longestActiveCopierNames.length > 0 && longestActiveRun > 1
             ? { copierNames: longestActiveCopierNames, hours: longestActiveRun }
             : undefined,
-        mostConsecutiveLowPrint: longestLowCopierStats.length > 0
+        mostConsecutiveLowPrint: longestLowCopierStats.length > 0 && longestLowRun > 1
             ? { copierStats: longestLowCopierStats, hours: longestLowRun }
             : undefined,
         mostHoursLowPrintOverall: mostLowPrintHourCopierNames.length > 0
