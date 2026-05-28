@@ -425,7 +425,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 }
             },
             legend: {
-                type: 'scroll'
+                type: 'scroll',
+                selectedMode: false
             },
             xAxis: {
                 type: 'time',
