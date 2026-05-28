@@ -185,11 +185,49 @@
 
         <div class="mb-4" id="kpiSection">
           <div class="columns is-multiline has-text-centered">
-            <div class="column is-full">
+            <div class="column is-two-thirds-desktop">
               <article class="kpi-card kpi-card-info">
                 <p class="kpi-name">Total prints (all copiers)</p>
                 <p id="kpiTotalPrintsValue" class="kpi-value">Loading&hellip;</p>
                 <p id="kpiTotalPrintsContext" class="kpi-context"></p>
+              </article>
+            </div>
+            <div class="column is-one-third-desktop">
+              <article class="kpi-card kpi-card-info has-text-left">
+                <div>
+                  <p class="kpi-name">What that means</p>
+                  <p class="kpi-context mb-3">
+                    Estimated assuming half of all prints are double-sided.
+                  </p>
+                  <ul class="kpi-impact-list">
+                    <li>
+                      <span id="kpiEstimatedPagesValue" class="kpi-impact-value">Loading&hellip;</span>
+                      pages
+                    </li>
+                    <li>
+                      <span id="kpiEstimatedReamsValue" class="kpi-impact-value">Loading&hellip;</span>
+                      reams
+                    </li>
+                    <li>
+                      <span id="kpiEstimatedCartonsValue" class="kpi-impact-value">Loading&hellip;</span>
+                      cartons
+                    </li>
+                    <li>
+                      <span id="kpiEstimatedTreesValue" class="kpi-impact-value">Loading&hellip;</span>
+                      trees
+                    </li>
+                  </ul>
+                </div>
+                <p class="kpi-context kpi-impact-reference">
+                  Reference:
+                  <a
+                    href="http://conservatree.org/learn/EnviroIssues/TreeStats.shtml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Conservatree
+                  </a>
+                </p>
               </article>
             </div>
             <div class="column is-one-third-desktop">

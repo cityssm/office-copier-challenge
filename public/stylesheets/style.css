@@ -70,3 +70,23 @@ html {
   white-space: pre-line;
   word-break: break-word;
 }
+
+.kpi-impact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kpi-impact-list li + li {
+  margin-top: 0.35rem;
+}
+
+.kpi-impact-value {
+  color: hsl(0deg, 0%, 14%);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.kpi-impact-reference a {
+  font-weight: 700;
+}
