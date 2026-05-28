@@ -14,6 +14,7 @@ interface DashboardCopier {
   copierId: number
   copierName: string
   hourlyCounts: DashboardPoint[]
+  totalPrints: number
 }
 
 interface DashboardData {
@@ -227,12 +228,59 @@ function computeKpisForRange(
 ): {
   busiestHour: { timeMillis: number; totalPrints: number } | undefined
   busiestCopierHour:
-    | { copierName: string; timeMillis: number; prints: number }
+    | {
+        copierHours: Array<{ copierName: string; timeMillis: number }>
+        prints: number
+      }
     | undefined
-  mostConsecutiveTopCopier: { copierName: string; hours: number } | undefined
-  mostConsecutiveActiveHours: { copierName: string; hours: number } | undefined
-  mostConsecutiveLowPrint: { copierName: string; hours: number } | undefined
+  mostConsecutiveTopCopier: { copierNames: string[]; hours: number } | undefined
+  mostConsecutiveActiveHours:
+    | { copierNames: string[]; hours: number }
+    | undefined
+  mostConsecutiveLowPrint:
+    | { copierStats: Array<{ copierName: string; prints: number }>; hours: number }
+    | undefined
+  mostHoursLowPrintOverall:
+    | { copierNames: string[]; hours: number }
+    | undefined
 } {
+  const totalPrintsByCopierName = new Map(
+    copiers.map((copier) => [copier.copierName, copier.totalPrints])
+  )
+
+  function getWinningCopierNames(
+    copierNames: string[],
+    useHighestTotals: boolean
+  ): string[] {
+    const uniqueCopierNames = [...new Set(copierNames)]
+
+    if (uniqueCopierNames.length <= 1) {
+      return uniqueCopierNames
+    }
+
+    let targetTotalPrints: number | undefined
+
+    for (const copierName of uniqueCopierNames) {
+      const totalPrints = totalPrintsByCopierName.get(copierName) ?? 0
+
+      if (
+        targetTotalPrints === undefined ||
+        (useHighestTotals
+          ? totalPrints > targetTotalPrints
+          : totalPrints < targetTotalPrints)
+      ) {
+        targetTotalPrints = totalPrints
+      }
+    }
+
+    return uniqueCopierNames
+      .filter(
+        (copierName) =>
+          (totalPrintsByCopierName.get(copierName) ?? 0) === targetTotalPrints
+      )
+      .toSorted((nameA, nameB) => nameA.localeCompare(nameB))
+  }
+
   const copierHourlyDeltas = copiers.map((copier) => ({
     copier,
     hourlyDeltas: buildHourlyDeltaSeries(copier.hourlyCounts).filter(
@@ -269,64 +317,136 @@ function computeKpisForRange(
 
   // KPI 1b: Busiest individual copier + hour
   let busiestCopierHour:
-    | { copierName: string; timeMillis: number; prints: number }
+    | {
+        copierHours: Array<{ copierName: string; timeMillis: number }>
+        prints: number
+      }
     | undefined
+  const busiestCopierHourCandidates: Array<{
+    copierName: string
+    timeMillis: number
+  }> = []
+  let busiestCopierPrints = -1
 
   for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
     for (const [timeMillis, prints] of hourlyDeltas) {
-      if (busiestCopierHour === undefined || prints > busiestCopierHour.prints) {
-        busiestCopierHour = { copierName: copier.copierName, timeMillis, prints }
+      if (prints > busiestCopierPrints) {
+        busiestCopierPrints = prints
+        busiestCopierHourCandidates.length = 0
+        busiestCopierHourCandidates.push({
+          copierName: copier.copierName,
+          timeMillis
+        })
+      } else if (prints === busiestCopierPrints) {
+        busiestCopierHourCandidates.push({
+          copierName: copier.copierName,
+          timeMillis
+        })
       }
+    }
+  }
+
+  if (busiestCopierHourCandidates.length > 0) {
+    const winningCopierNames = new Set(
+      getWinningCopierNames(
+        busiestCopierHourCandidates.map((candidate) => candidate.copierName),
+        true
+      )
+    )
+    const busiestTimeByCopierName = new Map<string, number>()
+
+    for (const candidate of busiestCopierHourCandidates) {
+      if (!winningCopierNames.has(candidate.copierName)) {
+        continue
+      }
+
+      const existingTimeMillis = busiestTimeByCopierName.get(candidate.copierName)
+
+      if (
+        existingTimeMillis === undefined ||
+        candidate.timeMillis < existingTimeMillis
+      ) {
+        busiestTimeByCopierName.set(candidate.copierName, candidate.timeMillis)
+      }
+    }
+
+    busiestCopierHour = {
+      copierHours: [...busiestTimeByCopierName.entries()]
+        .map(([copierName, timeMillis]) => ({ copierName, timeMillis }))
+        .toSorted((copierA, copierB) =>
+          copierA.copierName.localeCompare(copierB.copierName)
+        ),
+      prints: busiestCopierPrints
     }
   }
 
   // KPI 2a: Most consecutive hours as the top copier
-  const hourTopCopierName = new Map<number, string>()
+  const hourTopCopierNames = new Map<number, string[]>()
   for (const timeMillis of allHours) {
-    let topName: string | undefined
     let topPrints = 0
+    const topCopierNames: string[] = []
+
     for (const { copier, hourMap } of copierHourMaps) {
       const prints = hourMap.get(timeMillis) ?? 0
+
       if (prints > topPrints) {
         topPrints = prints
-        topName = copier.copierName
+        topCopierNames.length = 0
+        topCopierNames.push(copier.copierName)
+      } else if (prints === topPrints && prints > 0) {
+        topCopierNames.push(copier.copierName)
       }
     }
-    if (topName !== undefined) {
-      hourTopCopierName.set(timeMillis, topName)
+
+    if (topCopierNames.length > 0) {
+      hourTopCopierNames.set(timeMillis, topCopierNames)
     }
   }
 
-  let longestTopRun = 0
-  let longestTopCopier: string | undefined
-  let currentTopCopier: string | undefined
-  let currentTopRun = 0
+  const longestTopRunByCopierName = new Map<string, number>()
 
-  for (let index = 0; index < allHours.length; index++) {
-    const timeMillis = allHours[index]
-    const topName = hourTopCopierName.get(timeMillis)
-    const isConsecutive =
-      index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS
+  for (const { copier } of copierHourlyDeltas) {
+    let currentRun = 0
+    let previousWasTop = false
+    let longestRun = 0
 
-    if (topName !== undefined && topName === currentTopCopier && isConsecutive) {
-      currentTopRun++
-    } else {
-      currentTopCopier = topName
-      currentTopRun = topName !== undefined ? 1 : 0
+    for (let index = 0; index < allHours.length; index++) {
+      const timeMillis = allHours[index]
+      const topCopierNames = hourTopCopierNames.get(timeMillis) ?? []
+      const isTopCopier = topCopierNames.includes(copier.copierName)
+      const isConsecutive =
+        index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS
+
+      if (isTopCopier) {
+        currentRun = isConsecutive && previousWasTop ? currentRun + 1 : 1
+      } else {
+        currentRun = 0
+      }
+
+      previousWasTop = isTopCopier
+      longestRun = Math.max(longestRun, currentRun)
     }
 
-    if (currentTopCopier !== undefined && currentTopRun > longestTopRun) {
-      longestTopRun = currentTopRun
-      longestTopCopier = currentTopCopier
-    }
+    longestTopRunByCopierName.set(copier.copierName, longestRun)
   }
+
+  const longestTopRun = Math.max(...longestTopRunByCopierName.values(), 0)
+  const longestTopCopierNames =
+    longestTopRun > 0
+      ? getWinningCopierNames(
+          [...longestTopRunByCopierName.entries()]
+            .filter(([, run]) => run === longestTopRun)
+            .map(([copierName]) => copierName),
+          true
+        )
+      : []
 
   // KPI 2b: Most consecutive hours with copies > 0
-  let longestActiveRun = 0
-  let longestActiveCopier: string | undefined
+  const longestActiveRunByCopierName = new Map<string, number>()
 
   for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
     let currentRun = 0
+    let longestRun = 0
 
     for (let index = 0; index < hourlyDeltas.length; index++) {
       const [timeMillis, prints] = hourlyDeltas[index]
@@ -339,21 +459,34 @@ function computeKpisForRange(
         currentRun = 0
       }
 
-      if (currentRun > longestActiveRun) {
-        longestActiveRun = currentRun
-        longestActiveCopier = copier.copierName
-      }
+      longestRun = Math.max(longestRun, currentRun)
     }
+
+    longestActiveRunByCopierName.set(copier.copierName, longestRun)
   }
 
+  const longestActiveRun = Math.max(...longestActiveRunByCopierName.values(), 0)
+  const longestActiveCopierNames =
+    longestActiveRun > 0
+      ? getWinningCopierNames(
+          [...longestActiveRunByCopierName.entries()]
+            .filter(([, run]) => run === longestActiveRun)
+            .map(([copierName]) => copierName),
+          true
+        )
+      : []
+
   // KPI 3: Most consecutive hours with fewer than 5 copies
-  let longestLowRun = 0
-  let longestLowTotal = 0
-  let longestLowCopier: string | undefined
+  const longestLowRunByCopierName = new Map<string, number>()
+  const longestLowRunPrintsByCopierName = new Map<string, number>()
+  const lowPrintHoursByCopierName = new Map<string, number>()
 
   for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
     let currentRun = 0
-    let currentLowTotal = 0
+    let currentRunPrints = 0
+    let longestRun = 0
+    let longestRunPrints: number | undefined
+    let lowPrintHours = 0
 
     for (let index = 0; index < hourlyDeltas.length; index++) {
       const [timeMillis, prints] = hourlyDeltas[index]
@@ -361,30 +494,60 @@ function computeKpisForRange(
         index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
 
       if (prints < LOW_PRINT_THRESHOLD) {
+        lowPrintHours++
         if (isConsecutive && currentRun > 0) {
           currentRun++
-          currentLowTotal += prints
+          currentRunPrints += prints
         } else {
           currentRun = 1
-          currentLowTotal = prints
+          currentRunPrints = prints
         }
       } else {
         currentRun = 0
-        currentLowTotal = 0
+        currentRunPrints = 0
       }
 
-      if (
-        currentRun > longestLowRun ||
-        (currentRun === longestLowRun &&
-          currentRun > 0 &&
-          currentLowTotal < longestLowTotal)
+      if (currentRun > longestRun) {
+        longestRun = currentRun
+        longestRunPrints = currentRunPrints
+      } else if (
+        currentRun === longestRun &&
+        currentRun > 0 &&
+        (longestRunPrints === undefined || currentRunPrints < longestRunPrints)
       ) {
-        longestLowRun = currentRun
-        longestLowTotal = currentLowTotal
-        longestLowCopier = copier.copierName
+        longestRunPrints = currentRunPrints
       }
     }
+
+    longestLowRunByCopierName.set(copier.copierName, longestRun)
+    longestLowRunPrintsByCopierName.set(copier.copierName, longestRunPrints ?? 0)
+    lowPrintHoursByCopierName.set(copier.copierName, lowPrintHours)
   }
+
+  const longestLowRun = Math.max(...longestLowRunByCopierName.values(), 0)
+  const longestLowCopierNames =
+    longestLowRun > 0
+      ? getWinningCopierNames(
+          [...longestLowRunByCopierName.entries()]
+            .filter(([, run]) => run === longestLowRun)
+            .map(([copierName]) => copierName),
+          false
+        )
+      : []
+
+  const longestLowCopierStats = longestLowCopierNames.map((copierName) => ({
+    copierName,
+    prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0
+  }))
+  const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0)
+  const mostLowPrintHourCopierNames =
+    mostLowPrintHours > 0
+      // Show all copiers tied on low-print hour counts.
+      ? [...lowPrintHoursByCopierName.entries()]
+          .filter(([, hourCount]) => hourCount === mostLowPrintHours)
+          .map(([copierName]) => copierName)
+          .toSorted((nameA, nameB) => nameA.localeCompare(nameB))
+      : []
 
   return {
     busiestHour:
@@ -393,16 +556,20 @@ function computeKpisForRange(
         : undefined,
     busiestCopierHour,
     mostConsecutiveTopCopier:
-      longestTopCopier !== undefined
-        ? { copierName: longestTopCopier, hours: longestTopRun }
+      longestTopCopierNames.length > 0
+        ? { copierNames: longestTopCopierNames, hours: longestTopRun }
         : undefined,
     mostConsecutiveActiveHours:
-      longestActiveCopier !== undefined
-        ? { copierName: longestActiveCopier, hours: longestActiveRun }
+      longestActiveCopierNames.length > 0
+        ? { copierNames: longestActiveCopierNames, hours: longestActiveRun }
         : undefined,
     mostConsecutiveLowPrint:
-      longestLowCopier !== undefined
-        ? { copierName: longestLowCopier, hours: longestLowRun }
+      longestLowCopierStats.length > 0
+        ? { copierStats: longestLowCopierStats, hours: longestLowRun }
+        : undefined,
+    mostHoursLowPrintOverall:
+      mostLowPrintHourCopierNames.length > 0
+        ? { copierNames: mostLowPrintHourCopierNames, hours: mostLowPrintHours }
         : undefined
   }
 }
@@ -580,6 +747,24 @@ function computeKpisForRange(
       }
     }
 
+    const setKpiLines = (id: string, lines: string[]): void => {
+      const element = document.querySelector(`#${id}`)
+
+      if (!(element instanceof HTMLElement)) {
+        return
+      }
+
+      element.textContent = ''
+
+      lines.forEach((line, index) => {
+        if (index > 0) {
+          element.append(document.createElement('br'))
+        }
+
+        element.append(document.createTextNode(line))
+      })
+    }
+
     const noData = 'No data available'
     const hourWord = (count: number): string => (count === 1 ? 'hour' : 'hours')
 
@@ -593,39 +778,63 @@ function computeKpisForRange(
     }
 
     if (kpis.busiestCopierHour !== undefined) {
-      setKpiText(
+      setKpiLines(
         'kpiBusiestCopierHour',
-        `${kpis.busiestCopierHour.copierName}, ${formatTooltipDateTime(new Date(kpis.busiestCopierHour.timeMillis))} (${kpis.busiestCopierHour.prints.toLocaleString()} prints)`
+        kpis.busiestCopierHour.copierHours.map(
+          (copierHour) =>
+            `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))} (${kpis.busiestCopierHour.prints.toLocaleString()} prints)`
+        )
       )
     } else {
       setKpiText('kpiBusiestCopierHour', noData)
     }
 
     if (kpis.mostConsecutiveTopCopier !== undefined) {
-      setKpiText(
+      setKpiLines(
         'kpiTopCopierStreak',
-        `${kpis.mostConsecutiveTopCopier.copierName} (${kpis.mostConsecutiveTopCopier.hours} ${hourWord(kpis.mostConsecutiveTopCopier.hours)})`
+        kpis.mostConsecutiveTopCopier.copierNames.map(
+          (copierName) =>
+            `${copierName} (${kpis.mostConsecutiveTopCopier.hours} ${hourWord(kpis.mostConsecutiveTopCopier.hours)})`
+        )
       )
     } else {
       setKpiText('kpiTopCopierStreak', noData)
     }
 
     if (kpis.mostConsecutiveActiveHours !== undefined) {
-      setKpiText(
+      setKpiLines(
         'kpiActiveStreak',
-        `${kpis.mostConsecutiveActiveHours.copierName} (${kpis.mostConsecutiveActiveHours.hours} ${hourWord(kpis.mostConsecutiveActiveHours.hours)})`
+        kpis.mostConsecutiveActiveHours.copierNames.map(
+          (copierName) =>
+            `${copierName} (${kpis.mostConsecutiveActiveHours.hours} ${hourWord(kpis.mostConsecutiveActiveHours.hours)})`
+        )
       )
     } else {
       setKpiText('kpiActiveStreak', noData)
     }
 
     if (kpis.mostConsecutiveLowPrint !== undefined) {
-      setKpiText(
+      setKpiLines(
         'kpiLowPrintStreak',
-        `${kpis.mostConsecutiveLowPrint.copierName} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)})`
+        kpis.mostConsecutiveLowPrint.copierStats.map(
+          (copierStats) =>
+            `${copierStats.copierName} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)}, ${copierStats.prints.toLocaleString()} prints)`
+        )
       )
     } else {
       setKpiText('kpiLowPrintStreak', noData)
+    }
+
+    if (kpis.mostHoursLowPrintOverall !== undefined) {
+      setKpiLines(
+        'kpiLowPrintHours',
+        kpis.mostHoursLowPrintOverall.copierNames.map(
+          (copierName) =>
+            `${copierName} (${kpis.mostHoursLowPrintOverall.hours} ${hourWord(kpis.mostHoursLowPrintOverall.hours)})`
+        )
+      )
+    } else {
+      setKpiText('kpiLowPrintHours', noData)
     }
   }
 
