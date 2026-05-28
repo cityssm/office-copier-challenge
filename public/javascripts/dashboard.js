@@ -270,7 +270,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
         let currentRun = 0;
         let currentRunPrints = 0;
         let longestRun = 0;
-        let longestRunPrints = Number.POSITIVE_INFINITY;
+        let longestRunPrints;
         let lowPrintHours = 0;
         for (let index = 0; index < hourlyDeltas.length; index++) {
             const [timeMillis, prints] = hourlyDeltas[index];
@@ -296,12 +296,12 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
             else if (currentRun === longestRun &&
                 currentRun > 0 &&
-                currentRunPrints < longestRunPrints) {
+                (longestRunPrints === undefined || currentRunPrints < longestRunPrints)) {
                 longestRunPrints = currentRunPrints;
             }
         }
         longestLowRunByCopierName.set(copier.copierName, longestRun);
-        longestLowRunPrintsByCopierName.set(copier.copierName, Number.isFinite(longestRunPrints) ? longestRunPrints : 0);
+        longestLowRunPrintsByCopierName.set(copier.copierName, longestRunPrints ?? 0);
         lowPrintHoursByCopierName.set(copier.copierName, lowPrintHours);
     }
     const longestLowRun = Math.max(...longestLowRunByCopierName.values(), 0);
