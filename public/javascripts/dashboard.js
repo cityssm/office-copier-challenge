@@ -8,7 +8,11 @@ const COPIER_BAND_CLASSES = [
     'has-background-warning-light',
     'has-background-success-light'
 ];
-const COPIER_ICON_CLASSES = ['has-text-danger', 'has-text-warning', 'has-text-success'];
+const COPIER_ICON_CLASSES = [
+    'has-text-danger',
+    'has-text-warning',
+    'has-text-success'
+];
 const COPIER_TIER_LABELS = ['High usage', 'Medium usage', 'Low usage'];
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
@@ -105,11 +109,17 @@ function buildShadedTimeRanges(startMillis, endMillis, useDailyCounts, holidayDa
         }
         const morningRange = clampRange(dayStartMillis, dayStartMillis + 7 * HOUR_MILLIS, startMillis, endMillis);
         if (morningRange !== undefined) {
-            shadedRanges.push([{ xAxis: morningRange[0] }, { xAxis: morningRange[1] }]);
+            shadedRanges.push([
+                { xAxis: morningRange[0] },
+                { xAxis: morningRange[1] }
+            ]);
         }
         const eveningRange = clampRange(dayStartMillis + 17 * HOUR_MILLIS, dayEndMillis, startMillis, endMillis);
         if (eveningRange !== undefined) {
-            shadedRanges.push([{ xAxis: eveningRange[0] }, { xAxis: eveningRange[1] }]);
+            shadedRanges.push([
+                { xAxis: eveningRange[0] },
+                { xAxis: eveningRange[1] }
+            ]);
         }
     }
     return shadedRanges;
@@ -226,7 +236,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
         let currentRun = 0;
         let previousWasTop = false;
         let longestRun = 0;
-        for (let index = 0; index < allHours.length; index++) {
+        for (let index = 0; index < allHours.length; index += 1) {
             const timeMillis = allHours[index];
             const topCopierNames = hourTopCopierNames.get(timeMillis) ?? [];
             const isTopCopier = topCopierNames.includes(copier.copierName);
@@ -252,7 +262,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
         let currentRun = 0;
         let longestRun = 0;
-        for (let index = 0; index < hourlyDeltas.length; index++) {
+        for (let index = 0; index < hourlyDeltas.length; index += 1) {
             const [timeMillis, prints] = hourlyDeltas[index];
             const isConsecutive = index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS;
             if (prints > 0) {
@@ -280,13 +290,13 @@ function computeKpisForRange(copiers, cutoffMillis) {
         let longestRun = 0;
         let longestRunPrints;
         let lowPrintHours = 0;
-        for (let index = 0; index < hourlyDeltas.length; index++) {
+        for (let index = 0; index < hourlyDeltas.length; index += 1) {
             const [timeMillis, prints] = hourlyDeltas[index];
             const isConsecutive = index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS;
             if (prints < LOW_PRINT_THRESHOLD) {
-                lowPrintHours++;
+                lowPrintHours += 1;
                 if (isConsecutive && currentRun > 0) {
-                    currentRun++;
+                    currentRun += 1;
                     currentRunPrints += prints;
                 }
                 else {
@@ -324,15 +334,16 @@ function computeKpisForRange(copiers, cutoffMillis) {
     }));
     const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0);
     const mostLowPrintHourCopierNames = mostLowPrintHours > 0
-        ? [...lowPrintHoursByCopierName.entries()]
-            .filter(([, hourCount]) => hourCount === mostLowPrintHours)
-            .map(([copierName]) => copierName)
-            .toSorted((nameA, nameB) => nameA.localeCompare(nameB))
+        ?
+            [...lowPrintHoursByCopierName.entries()]
+                .filter(([, hourCount]) => hourCount === mostLowPrintHours)
+                .map(([copierName]) => copierName)
+                .toSorted((nameA, nameB) => nameA.localeCompare(nameB))
         : [];
     return {
-        busiestHour: busiestHourTime !== undefined
-            ? { timeMillis: busiestHourTime, totalPrints: busiestHourTotal }
-            : undefined,
+        busiestHour: busiestHourTime === undefined
+            ? undefined
+            : { timeMillis: busiestHourTime, totalPrints: busiestHourTotal },
         busiestCopierHour,
         mostConsecutiveTopCopier: longestTopCopierNames.length > 0
             ? { copierNames: longestTopCopierNames, hours: longestTopRun }
@@ -388,7 +399,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
         const selectedDurationDays = Number(chartDurationDaysElement.value);
         const nowMillis = Date.now();
         const cutoffMillis = nowMillis -
-            (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS;
+            (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) *
+                DAY_MILLIS;
         const useDailyCounts = selectedDurationDays === 30 || selectedDurationDays === 60;
         const shadedTimeRanges = buildShadedTimeRanges(cutoffMillis, nowMillis, useDailyCounts, dashboardData.holidayDayStartMillis);
         const selectedCopierIds = [
@@ -491,7 +503,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
             .map((copier) => copier.copierId));
     };
     const getSelectedCopierIds = () => {
-        return new Set([...document.querySelectorAll('.js-copier-checkbox:checked')].map((checkboxElement) => Number(checkboxElement.value)));
+        return new Set([
+            ...document.querySelectorAll('.js-copier-checkbox:checked')
+        ].map((checkboxElement) => Number(checkboxElement.value)));
     };
     const applySelectedCopierIds = (selectedCopierIds) => {
         for (const checkboxElement of checkboxElements) {
@@ -500,7 +514,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     };
     const loadSelectedCopierIds = () => {
         try {
-            const storedValue = window.localStorage.getItem(SELECTED_COPIER_IDS_STORAGE_KEY);
+            const storedValue = globalThis.localStorage.getItem(SELECTED_COPIER_IDS_STORAGE_KEY);
             if (storedValue === null || storedValue === '') {
                 return;
             }
@@ -519,7 +533,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     };
     const storeSelectedCopierIds = () => {
         try {
-            window.localStorage.setItem(SELECTED_COPIER_IDS_STORAGE_KEY, JSON.stringify([...getSelectedCopierIds()]));
+            globalThis.localStorage.setItem(SELECTED_COPIER_IDS_STORAGE_KEY, JSON.stringify([...getSelectedCopierIds()]));
         }
         catch {
         }
