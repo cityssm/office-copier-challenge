@@ -3,6 +3,13 @@ const DAY_MILLIS = 24 * HOUR_MILLIS;
 const DEFAULT_SELECTED_COPIER_COUNT = 9;
 const SELECTED_COPIER_IDS_STORAGE_KEY = 'office-copier-challenge.selectedCopierIds';
 const LOW_PRINT_THRESHOLD = 5;
+const COPIER_BAND_CLASSES = [
+    'has-background-danger-light',
+    'has-background-warning-light',
+    'has-background-success-light'
+];
+const COPIER_ICON_CLASSES = ['has-text-danger', 'has-text-warning', 'has-text-success'];
+const COPIER_TIER_LABELS = ['High usage', 'Medium usage', 'Low usage'];
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
@@ -444,6 +451,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
         });
     };
     const checkboxElements = document.querySelectorAll('.js-copier-checkbox');
+    const copierSelectionElement = document.querySelector('#copierSelection');
     const copierFilterElement = document.querySelector('#copierNameFilter');
     const copierOptionElements = document.querySelectorAll('.js-copier-option');
     let showHiddenCopiers = false;
@@ -582,6 +590,76 @@ function computeKpisForRange(copiers, cutoffMillis) {
             .filter(([timeMillis]) => timeMillis >= cutoffMillis)
             .reduce((total, [, printCount]) => total + printCount, 0);
     };
+    const getCopierTierIndex = (copierIndex, copierCount) => {
+        const baseBandSize = Math.floor(copierCount / 3);
+        const remainderCount = copierCount % 3;
+        const topBandSize = baseBandSize + (remainderCount >= 1 ? 1 : 0);
+        const middleBandSize = baseBandSize + (remainderCount >= 2 ? 1 : 0);
+        if (copierIndex < topBandSize) {
+            return 0;
+        }
+        if (copierIndex < topBandSize + middleBandSize) {
+            return 1;
+        }
+        return 2;
+    };
+    const updateCopierOptionTier = (copierOptionElement, copierIndex, copierCount) => {
+        const tierIndex = getCopierTierIndex(copierIndex, copierCount);
+        const tierLabel = COPIER_TIER_LABELS[tierIndex];
+        const labelElement = copierOptionElement.querySelector('label');
+        if (labelElement instanceof HTMLLabelElement) {
+            labelElement.classList.remove(...COPIER_BAND_CLASSES);
+            labelElement.classList.add(COPIER_BAND_CLASSES[tierIndex]);
+        }
+        const tierIconElement = copierOptionElement.querySelector('.icon');
+        if (tierIconElement instanceof HTMLSpanElement) {
+            tierIconElement.setAttribute('title', tierLabel);
+        }
+        const tierLayersElement = copierOptionElement.querySelector('.fa-layers');
+        if (tierLayersElement instanceof HTMLSpanElement) {
+            tierLayersElement.classList.remove(...COPIER_ICON_CLASSES);
+            tierLayersElement.classList.add(COPIER_ICON_CLASSES[tierIndex]);
+        }
+        const tierLabelElement = copierOptionElement.querySelector('.is-sr-only');
+        if (tierLabelElement instanceof HTMLSpanElement) {
+            tierLabelElement.textContent = tierLabel;
+        }
+    };
+    const reorderCopierOptionsForDuration = (copierCounts) => {
+        if (!(copierSelectionElement instanceof HTMLDivElement)) {
+            return;
+        }
+        const sortedCopierCounts = copierCounts.toSorted((copierA, copierB) => {
+            if (copierB.printCount !== copierA.printCount) {
+                return copierB.printCount - copierA.printCount;
+            }
+            return copierA.copierName.localeCompare(copierB.copierName);
+        });
+        const sortedCopierIds = sortedCopierCounts.map((copierCount) => copierCount.copierId);
+        const currentCopierIds = [
+            ...copierSelectionElement.querySelectorAll('.js-copier-checkbox')
+        ].map((checkboxElement) => Number(checkboxElement.value));
+        const orderMatches = currentCopierIds.length === sortedCopierIds.length &&
+            currentCopierIds.every((copierId, copierIndex) => copierId === sortedCopierIds[copierIndex]);
+        if (orderMatches) {
+            return;
+        }
+        const copierOptionById = new Map();
+        for (const copierOptionElement of copierOptionElements) {
+            const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox');
+            if (checkboxElement instanceof HTMLInputElement) {
+                copierOptionById.set(Number(checkboxElement.value), copierOptionElement);
+            }
+        }
+        for (let copierIndex = 0; copierIndex < sortedCopierCounts.length; copierIndex += 1) {
+            const copierOptionElement = copierOptionById.get(sortedCopierCounts[copierIndex].copierId);
+            if (copierOptionElement === undefined) {
+                continue;
+            }
+            copierSelectionElement.append(copierOptionElement);
+            updateCopierOptionTier(copierOptionElement, copierIndex, sortedCopierCounts.length);
+        }
+    };
     const updateCopierCountsForDuration = () => {
         const { cutoffMillis } = getDurationRange();
         const copierCounts = getPrintCountByCopier(cutoffMillis);
@@ -594,6 +672,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 countElement.textContent = copierCount.printCount.toLocaleString();
             }
         }
+        reorderCopierOptionsForDuration(copierCounts);
     };
     const updateHiddenCopiersButton = () => {
         toggleHiddenCopiersElement.textContent = showHiddenCopiers
