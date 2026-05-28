@@ -925,6 +925,12 @@ function computeKpisForRange(
     const { cutoffMillis } = getDurationRange()
     const kpis = computeKpisForRange(dashboardData.copiers, cutoffMillis)
 
+    const selectedDurationDays = Number(chartDurationDaysElement.value)
+    const durationLabel =
+      dashboardData.durationOptions.find(
+        (option) => option.days === selectedDurationDays
+      )?.label ?? ''
+
     const setKpi = (idBase: string, value: string, context: string): void => {
       const valueElement = document.querySelector(`#${idBase}Value`)
       const contextElement = document.querySelector(`#${idBase}Context`)
@@ -1021,6 +1027,12 @@ function computeKpisForRange(
         formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames)
       )
     }
+
+    const totalPrints = dashboardData.copiers.reduce(
+      (total, copier) => total + getPrintCountInRange(copier, cutoffMillis),
+      0
+    )
+    setKpi('kpiTotalPrints', formatPrintCount(totalPrints), durationLabel)
   }
 
   const getPrintCountInRange = (
