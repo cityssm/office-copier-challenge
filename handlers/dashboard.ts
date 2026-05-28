@@ -82,6 +82,7 @@ const CANADIAN_HOLIDAY_DATES: Array<[number, number, number]> = [
   [2026, 0, 1],
   [2026, 1, 16],
   [2026, 3, 3],
+  [2026, 3, 6],
   [2026, 4, 18],
   [2026, 6, 1],
   [2026, 7, 3],
