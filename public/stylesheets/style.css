@@ -17,26 +17,38 @@ html {
 }
 
 .kpi-card-danger {
-  background: linear-gradient(160deg, hsl(0deg 85% 90%), hsl(0deg 100% 97%));
+  background: linear-gradient(
+    160deg,
+    hsl(0deg, 85%, 90%, 0.7),
+    hsl(0deg, 100%, 97%)
+  );
 }
 
 .kpi-card-warning {
-  background: linear-gradient(160deg, hsl(43deg 100% 85%), hsl(43deg 100% 95%));
+  background: linear-gradient(
+    160deg,
+    hsl(43deg, 100%, 85%, 0.7),
+    hsl(43deg, 100%, 95%)
+  );
 }
 
 .kpi-card-success {
-  background: linear-gradient(160deg, hsl(141deg 53% 84%), hsl(141deg 71% 95%));
+  background: linear-gradient(
+    160deg,
+    hsl(141deg, 53%, 84%, 0.7),
+    hsl(141deg, 71%, 95%)
+  );
 }
 
 .kpi-name {
-  color: hsl(0deg 0% 21%);
+  color: hsl(0deg, 0%, 21%);
   font-size: 0.85rem;
   font-weight: 700;
   margin-bottom: 0.75rem;
 }
 
 .kpi-value {
-  color: hsl(0deg 0% 14%);
+  color: hsl(0deg, 0%, 14%);
   font-size: 2.25rem;
   font-weight: 700;
   line-height: 1.1;
@@ -44,7 +56,7 @@ html {
 }
 
 .kpi-context {
-  color: hsl(0deg 0% 29%);
+  color: hsl(0deg, 0%, 29%);
   font-size: 0.85rem;
   margin-bottom: 0;
   white-space: pre-line;
