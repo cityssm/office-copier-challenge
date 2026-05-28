@@ -755,9 +755,9 @@ function computeKpisForRange(
             (total, point) => total + point.printCount,
             0
           )
-          const topSeriesPrintCount = Math.max(
-            0,
-            ...printCountBySeries.map((point) => point.printCount)
+          const topSeriesPrintCount = printCountBySeries.reduce(
+            (topPrintCount, point) => Math.max(topPrintCount, point.printCount),
+            Number.NEGATIVE_INFINITY
           )
           const totalPrintLabel = totalPrintCount === 1 ? 'print' : 'prints'
           const timeHeader = useDailyCounts
