@@ -557,6 +557,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
         const { cutoffMillis } = getDurationRange();
         const kpis = computeKpisForRange(dashboardData.copiers, cutoffMillis);
+        const selectedDurationDays = Number(chartDurationDaysElement.value);
+        const durationLabel = dashboardData.durationOptions.find((option) => option.days === selectedDurationDays)?.label ?? '';
         const setKpi = (idBase, value, context) => {
             const valueElement = document.querySelector(`#${idBase}Value`);
             const contextElement = document.querySelector(`#${idBase}Context`);
@@ -616,6 +618,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
         else {
             setKpi('kpiLowPrintHours', formatHourCount(kpis.mostHoursLowPrintOverall.hours), formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames));
         }
+        const totalPrints = dashboardData.copiers.reduce((total, copier) => total + getPrintCountInRange(copier, cutoffMillis), 0);
+        setKpi('kpiTotalPrints', formatPrintCount(totalPrints), durationLabel);
     };
     const getPrintCountInRange = (copier, cutoffMillis) => buildHourlyDeltaSeries(copier.hourlyCounts)
         .filter(([timeMillis]) => timeMillis >= cutoffMillis)

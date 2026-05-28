@@ -16,6 +16,14 @@ html {
   justify-content: space-between;
 }
 
+.kpi-card-info {
+  background: linear-gradient(
+    160deg,
+    hsl(207deg, 70%, 85%, 0.7),
+    hsl(207deg, 70%, 95%)
+  );
+}
+
 .kpi-card-danger {
   background: linear-gradient(
     160deg,
