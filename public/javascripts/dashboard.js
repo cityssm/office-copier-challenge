@@ -366,6 +366,10 @@ function computeKpisForRange(copiers, cutoffMillis) {
     if (!(toggleHiddenCopiersElement instanceof HTMLButtonElement)) {
         return;
     }
+    const toggleStackedChartElement = document.querySelector('#toggleStackedChart');
+    if (!(toggleStackedChartElement instanceof HTMLButtonElement)) {
+        return;
+    }
     const selectAllCopiersElement = document.querySelector('#selectAllCopiers');
     const deselectAllCopiersElement = document.querySelector('#deselectAllCopiers');
     const resetCopierSelectionElement = document.querySelector('#resetCopierSelection');
@@ -398,6 +402,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             name: copier.copierName,
             type: 'line',
             showSymbol: false,
+            ...(isStackedChart ? { stack: 'total', areaStyle: {} } : {}),
             data: useDailyCounts
                 ? buildDailyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
                 : buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
@@ -455,6 +460,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     const copierFilterElement = document.querySelector('#copierNameFilter');
     const copierOptionElements = document.querySelectorAll('.js-copier-option');
     let showHiddenCopiers = false;
+    let isStackedChart = false;
     let copierNameFilterText = '';
     const getDurationRange = () => {
         const selectedDurationDays = Number(chartDurationDaysElement.value);
@@ -680,6 +686,10 @@ function computeKpisForRange(copiers, cutoffMillis) {
             : 'Show hidden copiers';
         toggleHiddenCopiersElement.setAttribute('aria-pressed', showHiddenCopiers ? 'true' : 'false');
     };
+    const updateStackedChartButton = () => {
+        toggleStackedChartElement.setAttribute('aria-pressed', isStackedChart ? 'true' : 'false');
+        toggleStackedChartElement.classList.toggle('is-link', isStackedChart);
+    };
     const updateCopierVisibility = () => {
         for (const copierOptionElement of copierOptionElements) {
             const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox');
@@ -714,6 +724,11 @@ function computeKpisForRange(copiers, cutoffMillis) {
         showHiddenCopiers = !showHiddenCopiers;
         updateHiddenCopiersButton();
         updateCopierVisibility();
+    });
+    toggleStackedChartElement.addEventListener('click', () => {
+        isStackedChart = !isStackedChart;
+        updateStackedChartButton();
+        updateChart();
     });
     selectAllCopiersElement.addEventListener('click', () => {
         applySelectedCopierIds(new Set(dashboardData.copiers.map((copier) => copier.copierId)));
@@ -775,6 +790,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     const storedSelectedCopierIds = loadSelectedCopierIds();
     applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds());
     updateHiddenCopiersButton();
+    updateStackedChartButton();
     updateChart();
     updateCopierVisibility();
     updateKpis();

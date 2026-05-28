@@ -44,6 +44,8 @@ interface DashboardChartSeries {
   name: string
   type: 'line'
   showSymbol: boolean
+  stack?: string
+  areaStyle?: Record<string, never>
   data: Array<[number, number]>
   markArea?: {
     silent: boolean
@@ -613,6 +615,12 @@ function computeKpisForRange(
     return
   }
 
+  const toggleStackedChartElement = document.querySelector('#toggleStackedChart')
+
+  if (!(toggleStackedChartElement instanceof HTMLButtonElement)) {
+    return
+  }
+
   const selectAllCopiersElement = document.querySelector('#selectAllCopiers')
   const deselectAllCopiersElement = document.querySelector('#deselectAllCopiers')
   const resetCopierSelectionElement = document.querySelector(
@@ -666,6 +674,7 @@ function computeKpisForRange(
       name: copier.copierName,
       type: 'line',
       showSymbol: false,
+      ...(isStackedChart ? { stack: 'total', areaStyle: {} } : {}),
       data: useDailyCounts
         ? buildDailyDeltaSeries(copier.hourlyCounts).filter(
             ([timeMillis]) => timeMillis >= cutoffMillis
@@ -742,6 +751,7 @@ function computeKpisForRange(
     '.js-copier-option'
   )
   let showHiddenCopiers = false
+  let isStackedChart = false
   let copierNameFilterText = ''
 
   const getDurationRange = (): {
@@ -1101,6 +1111,14 @@ function computeKpisForRange(
     )
   }
 
+  const updateStackedChartButton = (): void => {
+    toggleStackedChartElement.setAttribute(
+      'aria-pressed',
+      isStackedChart ? 'true' : 'false'
+    )
+    toggleStackedChartElement.classList.toggle('is-link', isStackedChart)
+  }
+
   const updateCopierVisibility = (): void => {
     for (const copierOptionElement of copierOptionElements) {
       const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox')
@@ -1144,6 +1162,12 @@ function computeKpisForRange(
     showHiddenCopiers = !showHiddenCopiers
     updateHiddenCopiersButton()
     updateCopierVisibility()
+  })
+
+  toggleStackedChartElement.addEventListener('click', () => {
+    isStackedChart = !isStackedChart
+    updateStackedChartButton()
+    updateChart()
   })
 
   selectAllCopiersElement.addEventListener('click', () => {
@@ -1224,6 +1248,7 @@ function computeKpisForRange(
   applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds())
 
   updateHiddenCopiersButton()
+  updateStackedChartButton()
   updateChart()
   updateCopierVisibility()
   updateKpis()
