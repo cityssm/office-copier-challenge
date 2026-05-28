@@ -703,7 +703,8 @@ function computeKpisForRange(
         }
       },
       legend: {
-        type: 'scroll'
+        type: 'scroll',
+        selectedMode: false
       },
       xAxis: {
         type: 'time',
