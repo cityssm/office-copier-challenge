@@ -6,3 +6,46 @@ html {
 .modal-card {
   max-width: 100%;
 }
+
+.kpi-card {
+  border-radius: 0.75rem;
+  min-height: 180px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-card-danger {
+  background: linear-gradient(160deg, hsl(0deg 85% 90%), hsl(0deg 100% 97%));
+}
+
+.kpi-card-warning {
+  background: linear-gradient(160deg, hsl(43deg 100% 85%), hsl(43deg 100% 95%));
+}
+
+.kpi-card-success {
+  background: linear-gradient(160deg, hsl(141deg 53% 84%), hsl(141deg 71% 95%));
+}
+
+.kpi-name {
+  color: hsl(0deg 0% 21%);
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.kpi-value {
+  color: hsl(0deg 0% 14%);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.kpi-context {
+  color: hsl(0deg 0% 29%);
+  font-size: 0.85rem;
+  margin-bottom: 0;
+  word-break: break-word;
+}
