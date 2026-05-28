@@ -1,9 +1,12 @@
+/* eslint-disable max-lines */
+
 import type { EChartsType } from 'echarts/types/dist/echarts'
 
 const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
 const DEFAULT_SELECTED_COPIER_COUNT = 9
-const SELECTED_COPIER_IDS_STORAGE_KEY = 'office-copier-challenge.selectedCopierIds'
+const SELECTED_COPIER_IDS_STORAGE_KEY =
+  'office-copier-challenge.selectedCopierIds'
 const LOW_PRINT_THRESHOLD = 5
 const COPIER_BAND_CLASSES = [
   'has-background-danger-light',
@@ -44,6 +47,8 @@ interface DashboardChartSeries {
   name: string
   type: 'line'
   showSymbol: boolean
+  stack?: string
+  areaStyle?: Record<string, never>
   data: Array<[number, number]>
   markArea?: {
     silent: boolean
@@ -128,7 +133,10 @@ function buildDailyDeltaSeries(
 
   for (const [timeMillis, prints] of hourlyDeltas) {
     const dayStartMillis = normalizeToDay(timeMillis)
-    dailyPrints.set(dayStartMillis, (dailyPrints.get(dayStartMillis) ?? 0) + prints)
+    dailyPrints.set(
+      dayStartMillis,
+      (dailyPrints.get(dayStartMillis) ?? 0) + prints
+    )
   }
 
   return [...dailyPrints.entries()].toSorted(([dayA], [dayB]) => dayA - dayB)
@@ -216,7 +224,10 @@ function buildShadedTimeRanges(
     )
 
     if (morningRange !== undefined) {
-      shadedRanges.push([{ xAxis: morningRange[0] }, { xAxis: morningRange[1] }])
+      shadedRanges.push([
+        { xAxis: morningRange[0] },
+        { xAxis: morningRange[1] }
+      ])
     }
 
     const eveningRange = clampRange(
@@ -227,7 +238,10 @@ function buildShadedTimeRanges(
     )
 
     if (eveningRange !== undefined) {
-      shadedRanges.push([{ xAxis: eveningRange[0] }, { xAxis: eveningRange[1] }])
+      shadedRanges.push([
+        { xAxis: eveningRange[0] },
+        { xAxis: eveningRange[1] }
+      ])
     }
   }
 
@@ -250,11 +264,12 @@ function computeKpisForRange(
     | { copierNames: string[]; hours: number }
     | undefined
   mostConsecutiveLowPrint:
-    | { copierStats: Array<{ copierName: string; prints: number }>; hours: number }
+    | {
+        copierStats: Array<{ copierName: string; prints: number }>
+        hours: number
+      }
     | undefined
-  mostHoursLowPrintOverall:
-    | { copierNames: string[]; hours: number }
-    | undefined
+  mostHoursLowPrintOverall: { copierNames: string[]; hours: number } | undefined
 } {
   const totalPrintsByCopierName = new Map(
     copiers.map((copier) => [copier.copierName, copier.totalPrints])
@@ -372,7 +387,9 @@ function computeKpisForRange(
         continue
       }
 
-      const existingTimeMillis = busiestTimeByCopierName.get(candidate.copierName)
+      const existingTimeMillis = busiestTimeByCopierName.get(
+        candidate.copierName
+      )
 
       if (
         existingTimeMillis === undefined ||
@@ -422,7 +439,7 @@ function computeKpisForRange(
     let previousWasTop = false
     let longestRun = 0
 
-    for (let index = 0; index < allHours.length; index++) {
+    for (let index = 0; index < allHours.length; index += 1) {
       const timeMillis = allHours[index]
       const topCopierNames = hourTopCopierNames.get(timeMillis) ?? []
       const isTopCopier = topCopierNames.includes(copier.copierName)
@@ -460,7 +477,7 @@ function computeKpisForRange(
     let currentRun = 0
     let longestRun = 0
 
-    for (let index = 0; index < hourlyDeltas.length; index++) {
+    for (let index = 0; index < hourlyDeltas.length; index += 1) {
       const [timeMillis, prints] = hourlyDeltas[index]
       const isConsecutive =
         index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
@@ -500,15 +517,15 @@ function computeKpisForRange(
     let longestRunPrints: number | undefined
     let lowPrintHours = 0
 
-    for (let index = 0; index < hourlyDeltas.length; index++) {
+    for (let index = 0; index < hourlyDeltas.length; index += 1) {
       const [timeMillis, prints] = hourlyDeltas[index]
       const isConsecutive =
         index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
 
       if (prints < LOW_PRINT_THRESHOLD) {
-        lowPrintHours++
+        lowPrintHours += 1
         if (isConsecutive && currentRun > 0) {
-          currentRun++
+          currentRun += 1
           currentRunPrints += prints
         } else {
           currentRun = 1
@@ -532,7 +549,10 @@ function computeKpisForRange(
     }
 
     longestLowRunByCopierName.set(copier.copierName, longestRun)
-    longestLowRunPrintsByCopierName.set(copier.copierName, longestRunPrints ?? 0)
+    longestLowRunPrintsByCopierName.set(
+      copier.copierName,
+      longestRunPrints ?? 0
+    )
     lowPrintHoursByCopierName.set(copier.copierName, lowPrintHours)
   }
 
@@ -554,8 +574,8 @@ function computeKpisForRange(
   const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0)
   const mostLowPrintHourCopierNames =
     mostLowPrintHours > 0
-      // Show all copiers tied on low-print hour counts.
-      ? [...lowPrintHoursByCopierName.entries()]
+      ? // Show all copiers tied on low-print hour counts.
+        [...lowPrintHoursByCopierName.entries()]
           .filter(([, hourCount]) => hourCount === mostLowPrintHours)
           .map(([copierName]) => copierName)
           .toSorted((nameA, nameB) => nameA.localeCompare(nameB))
@@ -563,22 +583,27 @@ function computeKpisForRange(
 
   return {
     busiestHour:
-      busiestHourTime !== undefined
-        ? { timeMillis: busiestHourTime, totalPrints: busiestHourTotal }
-        : undefined,
+      busiestHourTime === undefined
+        ? undefined
+        : { timeMillis: busiestHourTime, totalPrints: busiestHourTotal },
+
     busiestCopierHour,
+
     mostConsecutiveTopCopier:
       longestTopCopierNames.length > 0
         ? { copierNames: longestTopCopierNames, hours: longestTopRun }
         : undefined,
+
     mostConsecutiveActiveHours:
       longestActiveCopierNames.length > 0
         ? { copierNames: longestActiveCopierNames, hours: longestActiveRun }
         : undefined,
+
     mostConsecutiveLowPrint:
       longestLowCopierStats.length > 0
         ? { copierStats: longestLowCopierStats, hours: longestLowRun }
         : undefined,
+
     mostHoursLowPrintOverall:
       mostLowPrintHourCopierNames.length > 0
         ? { copierNames: mostLowPrintHourCopierNames, hours: mostLowPrintHours }
@@ -613,8 +638,18 @@ function computeKpisForRange(
     return
   }
 
+  const toggleStackedChartElement = document.querySelector(
+    '#toggleStackedChart'
+  )
+
+  if (!(toggleStackedChartElement instanceof HTMLButtonElement)) {
+    return
+  }
+
   const selectAllCopiersElement = document.querySelector('#selectAllCopiers')
-  const deselectAllCopiersElement = document.querySelector('#deselectAllCopiers')
+  const deselectAllCopiersElement = document.querySelector(
+    '#deselectAllCopiers'
+  )
   const resetCopierSelectionElement = document.querySelector(
     '#resetCopierSelection'
   )
@@ -642,9 +677,11 @@ function computeKpisForRange(
     const nowMillis = Date.now()
     const cutoffMillis =
       nowMillis -
-      (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) * DAY_MILLIS
+      (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) *
+        DAY_MILLIS
 
-    const useDailyCounts = selectedDurationDays === 30 || selectedDurationDays === 60
+    const useDailyCounts =
+      selectedDurationDays === 30 || selectedDurationDays === 60
     const shadedTimeRanges = buildShadedTimeRanges(
       cutoffMillis,
       nowMillis,
@@ -653,7 +690,9 @@ function computeKpisForRange(
     )
 
     const selectedCopierIds = [
-      ...document.querySelectorAll<HTMLInputElement>('.js-copier-checkbox:checked')
+      ...document.querySelectorAll<HTMLInputElement>(
+        '.js-copier-checkbox:checked'
+      )
     ].map((checkboxElement) => Number(checkboxElement.value))
 
     const selectedCopiers = selectedCopierIds
@@ -666,6 +705,7 @@ function computeKpisForRange(
       name: copier.copierName,
       type: 'line',
       showSymbol: false,
+      ...(isStackedChart ? { stack: 'total', areaStyle: {} } : {}),
       data: useDailyCounts
         ? buildDailyDeltaSeries(copier.hourlyCounts).filter(
             ([timeMillis]) => timeMillis >= cutoffMillis
@@ -695,12 +735,14 @@ function computeKpisForRange(
       animation: false,
       tooltip: {
         trigger: 'axis',
-        formatter: (tooltipItems: Array<{
-          axisValue: number
-          marker: string
-          seriesName: string
-          value: [number, number]
-        }>) => {
+        formatter: (
+          tooltipItems: Array<{
+            axisValue: number
+            marker: string
+            seriesName: string
+            value: [number, number]
+          }>
+        ) => {
           const timeHeader = useDailyCounts
             ? new Date(tooltipItems[0].axisValue).toLocaleDateString()
             : formatTooltipDateTime(new Date(tooltipItems[0].axisValue))
@@ -708,7 +750,8 @@ function computeKpisForRange(
           return [
             timeHeader,
             ...tooltipItems.map(
-              (point) => `${point.marker} ${point.seriesName}: ${point.value[1]}`
+              (point) =>
+                `${point.marker} ${point.seriesName}: ${point.value[1]}`
             )
           ].join('<br/>')
         }
@@ -738,10 +781,10 @@ function computeKpisForRange(
   )
   const copierSelectionElement = document.querySelector('#copierSelection')
   const copierFilterElement = document.querySelector('#copierNameFilter')
-  const copierOptionElements = document.querySelectorAll<HTMLDivElement>(
-    '.js-copier-option'
-  )
+  const copierOptionElements =
+    document.querySelectorAll<HTMLDivElement>('.js-copier-option')
   let showHiddenCopiers = false
+  let isStackedChart = false
   let copierNameFilterText = ''
 
   const getDurationRange = (): {
@@ -766,9 +809,9 @@ function computeKpisForRange(
     printCount: number
   }> => {
     return dashboardData.copiers.map((copier) => ({
-    copierId: copier.copierId,
-    copierName: copier.copierName,
-    printCount: getPrintCountInRange(copier, cutoffMillis)
+      copierId: copier.copierId,
+      copierName: copier.copierName,
+      printCount: getPrintCountInRange(copier, cutoffMillis)
     }))
   }
 
@@ -776,69 +819,74 @@ function computeKpisForRange(
     const { cutoffMillis } = getDurationRange()
 
     return new Set(
-    getPrintCountByCopier(cutoffMillis)
-      .toSorted((copierA, copierB) => {
-        if (copierB.printCount !== copierA.printCount) {
-          return copierB.printCount - copierA.printCount
-        }
+      getPrintCountByCopier(cutoffMillis)
+        .toSorted((copierA, copierB) => {
+          if (copierB.printCount !== copierA.printCount) {
+            return copierB.printCount - copierA.printCount
+          }
 
-        return copierA.copierName.localeCompare(copierB.copierName)
-      })
-      .slice(0, DEFAULT_SELECTED_COPIER_COUNT)
-      .map((copier) => copier.copierId)
+          return copierA.copierName.localeCompare(copierB.copierName)
+        })
+        .slice(0, DEFAULT_SELECTED_COPIER_COUNT)
+        .map((copier) => copier.copierId)
     )
   }
 
   const getSelectedCopierIds = (): Set<number> => {
     return new Set(
-    [...document.querySelectorAll<HTMLInputElement>('.js-copier-checkbox:checked')].map(
-      (checkboxElement) => Number(checkboxElement.value)
-    )
+      [
+        ...document.querySelectorAll<HTMLInputElement>(
+          '.js-copier-checkbox:checked'
+        )
+      ].map((checkboxElement) => Number(checkboxElement.value))
     )
   }
 
   const applySelectedCopierIds = (selectedCopierIds: Set<number>): void => {
     for (const checkboxElement of checkboxElements) {
-    checkboxElement.checked = selectedCopierIds.has(Number(checkboxElement.value))
+      checkboxElement.checked = selectedCopierIds.has(
+        Number(checkboxElement.value)
+      )
     }
   }
 
   const loadSelectedCopierIds = (): Set<number> | undefined => {
     try {
-    const storedValue = window.localStorage.getItem(
-      SELECTED_COPIER_IDS_STORAGE_KEY
-    )
-
-    if (storedValue === null || storedValue === '') {
-      return
-    }
-
-    const storedCopierIds = JSON.parse(storedValue) as unknown
-
-    if (!Array.isArray(storedCopierIds)) {
-      return
-    }
-
-    const selectedCopierIds = storedCopierIds
-      .map((value) => Number(value))
-      .filter(
-        (copierId) => Number.isInteger(copierId) && copierDataById.has(copierId)
+      const storedValue = globalThis.localStorage.getItem(
+        SELECTED_COPIER_IDS_STORAGE_KEY
       )
 
-    return new Set(selectedCopierIds)
+      if (storedValue === null || storedValue === '') {
+        return
+      }
+
+      const storedCopierIds = JSON.parse(storedValue) as unknown
+
+      if (!Array.isArray(storedCopierIds)) {
+        return
+      }
+
+      const selectedCopierIds = storedCopierIds
+        .map((value) => Number(value))
+        .filter(
+          (copierId) =>
+            Number.isInteger(copierId) && copierDataById.has(copierId)
+        )
+
+      return new Set(selectedCopierIds)
     } catch {
-    return
+      return
     }
   }
 
   const storeSelectedCopierIds = (): void => {
     try {
-    window.localStorage.setItem(
-      SELECTED_COPIER_IDS_STORAGE_KEY,
-      JSON.stringify([...getSelectedCopierIds()])
-    )
+      globalThis.localStorage.setItem(
+        SELECTED_COPIER_IDS_STORAGE_KEY,
+        JSON.stringify([...getSelectedCopierIds()])
+      )
     } catch {
-    // localStorage may be blocked by browser settings
+      // localStorage may be blocked by browser settings
     }
   }
 
@@ -959,7 +1007,10 @@ function computeKpisForRange(
       .reduce((total, [, printCount]) => total + printCount, 0)
   }
 
-  const getCopierTierIndex = (copierIndex: number, copierCount: number): number => {
+  const getCopierTierIndex = (
+    copierIndex: number,
+    copierCount: number
+  ): number => {
     const baseBandSize = Math.floor(copierCount / 3)
     const remainderCount = copierCount % 3
     const topBandSize = baseBandSize + (remainderCount >= 1 ? 1 : 0)
@@ -1011,7 +1062,11 @@ function computeKpisForRange(
   }
 
   const reorderCopierOptionsForDuration = (
-    copierCounts: Array<{ copierId: number; copierName: string; printCount: number }>
+    copierCounts: Array<{
+      copierId: number
+      copierName: string
+      printCount: number
+    }>
   ): void => {
     if (!(copierSelectionElement instanceof HTMLDivElement)) {
       return
@@ -1025,9 +1080,13 @@ function computeKpisForRange(
       return copierA.copierName.localeCompare(copierB.copierName)
     })
 
-    const sortedCopierIds = sortedCopierCounts.map((copierCount) => copierCount.copierId)
+    const sortedCopierIds = sortedCopierCounts.map(
+      (copierCount) => copierCount.copierId
+    )
     const currentCopierIds = [
-      ...copierSelectionElement.querySelectorAll<HTMLInputElement>('.js-copier-checkbox')
+      ...copierSelectionElement.querySelectorAll<HTMLInputElement>(
+        '.js-copier-checkbox'
+      )
     ].map((checkboxElement) => Number(checkboxElement.value))
     const orderMatches =
       currentCopierIds.length === sortedCopierIds.length &&
@@ -1042,7 +1101,9 @@ function computeKpisForRange(
     const copierOptionById = new Map<number, HTMLDivElement>()
 
     for (const copierOptionElement of copierOptionElements) {
-      const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox')
+      const checkboxElement = copierOptionElement.querySelector(
+        '.js-copier-checkbox'
+      )
 
       if (checkboxElement instanceof HTMLInputElement) {
         copierOptionById.set(Number(checkboxElement.value), copierOptionElement)
@@ -1101,9 +1162,19 @@ function computeKpisForRange(
     )
   }
 
+  const updateStackedChartButton = (): void => {
+    toggleStackedChartElement.setAttribute(
+      'aria-pressed',
+      isStackedChart ? 'true' : 'false'
+    )
+    toggleStackedChartElement.classList.toggle('is-link', isStackedChart)
+  }
+
   const updateCopierVisibility = (): void => {
     for (const copierOptionElement of copierOptionElements) {
-      const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox')
+      const checkboxElement = copierOptionElement.querySelector(
+        '.js-copier-checkbox'
+      )
       const copierName = copierOptionElement.dataset.copierName ?? ''
       const matchesFilter = copierName.includes(copierNameFilterText)
       const isSelected =
@@ -1146,6 +1217,12 @@ function computeKpisForRange(
     updateCopierVisibility()
   })
 
+  toggleStackedChartElement.addEventListener('click', () => {
+    isStackedChart = !isStackedChart
+    updateStackedChartButton()
+    updateChart()
+  })
+
   selectAllCopiersElement.addEventListener('click', () => {
     applySelectedCopierIds(
       new Set(dashboardData.copiers.map((copier) => copier.copierId))
@@ -1173,7 +1250,9 @@ function computeKpisForRange(
   })
 
   const aboutModalElement = document.querySelector('#aboutModal')
-  const aboutModalCloseElements = document.querySelectorAll('.js-about-modal-close')
+  const aboutModalCloseElements = document.querySelectorAll(
+    '.js-about-modal-close'
+  )
 
   if (aboutModalElement instanceof HTMLDivElement) {
     const openAboutModal = (): void => {
@@ -1197,7 +1276,9 @@ function computeKpisForRange(
   }
 
   const tipsModalElement = document.querySelector('#tipsModal')
-  const tipsModalCloseElements = document.querySelectorAll('.js-tips-modal-close')
+  const tipsModalCloseElements = document.querySelectorAll(
+    '.js-tips-modal-close'
+  )
 
   if (tipsModalElement instanceof HTMLDivElement) {
     const openTipsModal = (): void => {
@@ -1221,9 +1302,12 @@ function computeKpisForRange(
   updateCopierCountsForDuration()
 
   const storedSelectedCopierIds = loadSelectedCopierIds()
-  applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds())
+  applySelectedCopierIds(
+    storedSelectedCopierIds ?? getDefaultSelectedCopierIds()
+  )
 
   updateHiddenCopiersButton()
+  updateStackedChartButton()
   updateChart()
   updateCopierVisibility()
   updateKpis()
