@@ -855,14 +855,16 @@ function computeKpisForRange(
     const noDataValue = '—'
     const noDataContext = 'No data available'
     const formatCopierNames = (copierNames: string[]): string =>
-      copierNames.join(', ')
+      copierNames.join('\n')
+    const formatPrintCount = (prints: number): string =>
+      `${prints.toLocaleString()} prints`
     const formatHourCount = (hours: number): string =>
       `${hours.toLocaleString()} ${hours === 1 ? 'hour' : 'hours'}`
 
     if (kpis.busiestHour !== undefined) {
       setKpi(
         'kpiBusiestHour',
-        kpis.busiestHour.totalPrints.toLocaleString(),
+        formatPrintCount(kpis.busiestHour.totalPrints),
         formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis))
       )
     } else {
@@ -875,12 +877,15 @@ function computeKpisForRange(
       if (firstCopierHour === undefined) {
         setKpi('kpiBusiestCopierHour', noDataValue, noDataContext)
       } else {
-        const tieCount = kpis.busiestCopierHour.copierHours.length - 1
-
         setKpi(
           'kpiBusiestCopierHour',
-          kpis.busiestCopierHour.prints.toLocaleString(),
-          `${firstCopierHour.copierName}, ${formatTooltipDateTime(new Date(firstCopierHour.timeMillis))}${tieCount > 0 ? ` (+${tieCount.toString()} ties)` : ''}`
+          formatPrintCount(kpis.busiestCopierHour.prints),
+          kpis.busiestCopierHour.copierHours
+            .map(
+              (copierHour) =>
+                `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))}`
+            )
+            .join('\n')
         )
       }
     } else {

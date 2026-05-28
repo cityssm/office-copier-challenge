@@ -47,5 +47,6 @@ html {
   color: hsl(0deg 0% 29%);
   font-size: 0.85rem;
   margin-bottom: 0;
+  white-space: pre-line;
   word-break: break-word;
 }
