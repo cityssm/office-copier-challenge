@@ -316,6 +316,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     }));
     const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0);
     const mostLowPrintHourCopierNames = mostLowPrintHours > 0
+        // Show all copiers tied on low-print hour counts.
         ? [...lowPrintHoursByCopierName.entries()]
             .filter(([, hourCount]) => hourCount === mostLowPrintHours)
             .map(([copierName]) => copierName)
