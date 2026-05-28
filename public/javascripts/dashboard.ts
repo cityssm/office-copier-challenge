@@ -237,7 +237,9 @@ function computeKpisForRange(
   mostConsecutiveActiveHours:
     | { copierNames: string[]; hours: number }
     | undefined
-  mostConsecutiveLowPrint: { copierNames: string[]; hours: number } | undefined
+  mostConsecutiveLowPrint:
+    | { copierStats: Array<{ copierName: string; prints: number }>; hours: number }
+    | undefined
   mostHoursLowPrintOverall:
     | { copierNames: string[]; hours: number }
     | undefined
@@ -476,11 +478,14 @@ function computeKpisForRange(
 
   // KPI 3: Most consecutive hours with fewer than 5 copies
   const longestLowRunByCopierName = new Map<string, number>()
+  const longestLowRunPrintsByCopierName = new Map<string, number>()
   const lowPrintHoursByCopierName = new Map<string, number>()
 
   for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
     let currentRun = 0
+    let currentRunPrints = 0
     let longestRun = 0
+    let longestRunPrints = Number.POSITIVE_INFINITY
     let lowPrintHours = 0
 
     for (let index = 0; index < hourlyDeltas.length; index++) {
@@ -492,17 +497,33 @@ function computeKpisForRange(
         lowPrintHours++
         if (isConsecutive && currentRun > 0) {
           currentRun++
+          currentRunPrints += prints
         } else {
           currentRun = 1
+          currentRunPrints = prints
         }
       } else {
         currentRun = 0
+        currentRunPrints = 0
       }
 
-      longestRun = Math.max(longestRun, currentRun)
+      if (currentRun > longestRun) {
+        longestRun = currentRun
+        longestRunPrints = currentRunPrints
+      } else if (
+        currentRun === longestRun &&
+        currentRun > 0 &&
+        currentRunPrints < longestRunPrints
+      ) {
+        longestRunPrints = currentRunPrints
+      }
     }
 
     longestLowRunByCopierName.set(copier.copierName, longestRun)
+    longestLowRunPrintsByCopierName.set(
+      copier.copierName,
+      Number.isFinite(longestRunPrints) ? longestRunPrints : 0
+    )
     lowPrintHoursByCopierName.set(copier.copierName, lowPrintHours)
   }
 
@@ -516,15 +537,18 @@ function computeKpisForRange(
           false
         )
       : []
+
+  const longestLowCopierStats = longestLowCopierNames.map((copierName) => ({
+    copierName,
+    prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0
+  }))
   const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0)
   const mostLowPrintHourCopierNames =
     mostLowPrintHours > 0
-      ? getWinningCopierNames(
-          [...lowPrintHoursByCopierName.entries()]
-            .filter(([, hourCount]) => hourCount === mostLowPrintHours)
-            .map(([copierName]) => copierName),
-          true
-        )
+      ? [...lowPrintHoursByCopierName.entries()]
+          .filter(([, hourCount]) => hourCount === mostLowPrintHours)
+          .map(([copierName]) => copierName)
+          .toSorted((nameA, nameB) => nameA.localeCompare(nameB))
       : []
 
   return {
@@ -542,8 +566,8 @@ function computeKpisForRange(
         ? { copierNames: longestActiveCopierNames, hours: longestActiveRun }
         : undefined,
     mostConsecutiveLowPrint:
-      longestLowCopierNames.length > 0
-        ? { copierNames: longestLowCopierNames, hours: longestLowRun }
+      longestLowCopierStats.length > 0
+        ? { copierStats: longestLowCopierStats, hours: longestLowRun }
         : undefined,
     mostHoursLowPrintOverall:
       mostLowPrintHourCopierNames.length > 0
@@ -794,9 +818,9 @@ function computeKpisForRange(
     if (kpis.mostConsecutiveLowPrint !== undefined) {
       setKpiLines(
         'kpiLowPrintStreak',
-        kpis.mostConsecutiveLowPrint.copierNames.map(
-          (copierName) =>
-            `${copierName} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)})`
+        kpis.mostConsecutiveLowPrint.copierStats.map(
+          (copierStats) =>
+            `${copierStats.copierName} (${kpis.mostConsecutiveLowPrint.hours} ${hourWord(kpis.mostConsecutiveLowPrint.hours)}, ${copierStats.prints.toLocaleString()} prints)`
         )
       )
     } else {
