@@ -439,12 +439,28 @@ function computeKpisForRange(copiers, cutoffMillis) {
             tooltip: {
                 trigger: 'axis',
                 formatter: (tooltipItems) => {
+                    if (tooltipItems.length === 0) {
+                        return '';
+                    }
+                    const printCountBySeries = tooltipItems.map((point) => ({
+                        ...point,
+                        printCount: point.value[1]
+                    }));
+                    const totalPrintCount = printCountBySeries.reduce((total, point) => total + point.printCount, 0);
+                    const topSeriesPrintCount = printCountBySeries.reduce((topPrintCount, point) => Math.max(topPrintCount, point.printCount), Number.NEGATIVE_INFINITY);
+                    const totalPrintLabel = totalPrintCount === 1 ? 'print' : 'prints';
                     const timeHeader = useDailyCounts
                         ? new Date(tooltipItems[0].axisValue).toLocaleDateString()
                         : formatTooltipDateTime(new Date(tooltipItems[0].axisValue));
                     return [
-                        timeHeader,
-                        ...tooltipItems.map((point) => `${point.marker} ${point.seriesName}: ${point.value[1]}`)
+                        `${timeHeader} · Total: ${totalPrintCount.toLocaleString()} ${totalPrintLabel}`,
+                        ...printCountBySeries.map((point) => {
+                            const pointLine = `${point.marker} ${point.seriesName}: ${point.printCount.toLocaleString()}`;
+                            return topSeriesPrintCount > 0 &&
+                                point.printCount === topSeriesPrintCount
+                                ? `<strong>${pointLine}</strong>`
+                                : pointLine;
+                        })
                     ].join('<br/>');
                 }
             },
