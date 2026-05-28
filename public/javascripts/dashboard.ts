@@ -590,17 +590,17 @@ function computeKpisForRange(
     busiestCopierHour,
 
     mostConsecutiveTopCopier:
-      longestTopCopierNames.length > 0
+      longestTopCopierNames.length > 0 && longestTopRun > 1
         ? { copierNames: longestTopCopierNames, hours: longestTopRun }
         : undefined,
 
     mostConsecutiveActiveHours:
-      longestActiveCopierNames.length > 0
+      longestActiveCopierNames.length > 0 && longestActiveRun > 1
         ? { copierNames: longestActiveCopierNames, hours: longestActiveRun }
         : undefined,
 
     mostConsecutiveLowPrint:
-      longestLowCopierStats.length > 0
+      longestLowCopierStats.length > 0 && longestLowRun > 1
         ? { copierStats: longestLowCopierStats, hours: longestLowRun }
         : undefined,
 
