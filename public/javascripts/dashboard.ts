@@ -1379,10 +1379,10 @@ function computeKpisForRange(
     totalPrintCount: number
   ): number => {
     if (totalPrintCount <= 0) {
-      return 1
+      return 2
     }
 
-    const printShare = printCount / totalPrintCount
+    const printShare = Math.max(0, printCount) / totalPrintCount
 
     if (printShare > HIGH_USAGE_PRINT_SHARE_THRESHOLD) {
       return 0
