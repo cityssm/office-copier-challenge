@@ -8,6 +8,7 @@ const createStatements = [
       copierId INTEGER PRIMARY KEY AUTOINCREMENT,
       copierName TEXT NOT NULL,
       ipAddress TEXT NOT NULL,
+      oid TEXT,
       isActive INTEGER NOT NULL DEFAULT 1
     );
   `,

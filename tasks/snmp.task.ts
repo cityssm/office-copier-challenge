@@ -7,18 +7,21 @@ import getCopiers from '../database/getCopiers.js'
 import getLatestCopierCountValue from '../database/getLatestCopierCountValue.js'
 import recordCopierCount from '../database/recordCopierCount.js'
 import { DEBUG_NAMESPACE } from '../debug.config.js'
-import { community, oids } from '../helpers/oid.helpers.js'
+import { community, oid } from '../helpers/oid.helpers.js'
 
 // eslint-disable-next-line @typescript-eslint/no-magic-numbers
 const pollingInterval = minutesToMillis(20)
 
 const debug = Debug(`${DEBUG_NAMESPACE}:tasks:snmp`)
 
-function recordLastKnownCount(copier: {
-  copierId: number
-  copierName: string
-  ipAddress: string
-}, oid: string): void {
+function recordLastKnownCount(
+  copier: {
+    copierId: number
+    copierName: string
+    ipAddress: string
+  },
+  oid: string
+): void {
   let lastCountValue: number | undefined
 
   try {
@@ -55,58 +58,58 @@ function pollCopiers(): void {
   for (const copier of copiers) {
     const snmpSession = snmp.createSession(copier.ipAddress, community)
 
-    for (const oid of oids) {
-      snmpSession.get([oid], (error, varbinds) => {
-        if (error) {
-          debug(
-            `Error polling copier ${copier.copierName} (${copier.ipAddress}):`,
-            error
-          )
-          recordLastKnownCount(copier, oid)
-        } else {
-          let didRecordCurrentValue = false
+    const oidToPoll = copier.oid ?? oid
 
-          for (const varbind of varbinds ?? []) {
-            if (snmp.isVarbindError(varbind)) {
+    snmpSession.get([oidToPoll], (error, varbinds) => {
+      if (error) {
+        debug(
+          `Error polling copier ${copier.copierName} (${copier.ipAddress}):`,
+          error
+        )
+        recordLastKnownCount(copier, oidToPoll)
+      } else {
+        let didRecordCurrentValue = false
+
+        for (const varbind of varbinds ?? []) {
+          if (snmp.isVarbindError(varbind)) {
+            debug(
+              `SNMP error for copier ${copier.copierName} (${copier.ipAddress}):`,
+              snmp.varbindError(varbind)
+            )
+          } else {
+            const countValue = Number(varbind.value)
+
+            if (!Number.isFinite(countValue)) {
               debug(
-                `SNMP error for copier ${copier.copierName} (${copier.ipAddress}):`,
-                snmp.varbindError(varbind)
+                `Received non-numeric SNMP value from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${varbind.value?.toString() ?? 'undefined'}`
               )
-            } else {
-              const countValue = Number(varbind.value)
-
-              if (!Number.isFinite(countValue)) {
-                debug(
-                  `Received non-numeric SNMP value from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${varbind.value?.toString() ?? 'undefined'}`
-                )
-                continue
-              }
-
-              debug(
-                `Received SNMP data from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${countValue}`
-              )
-
-              recordCopierCount({
-                copierId: copier.copierId,
-                countType: varbind.oid,
-                countValue
-              })
-
-              // eslint-disable-next-line no-useless-assignment, sonarjs/no-dead-store
-              didRecordCurrentValue = true
-
-              // If we received a valid response, we can stop waiting for more responses
-              return
+              continue
             }
-          }
 
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          if (!didRecordCurrentValue) {
-            recordLastKnownCount(copier, oid)
+            debug(
+              `Received SNMP data from copier ${copier.copierName} (${copier.ipAddress}): OID ${varbind.oid}, Value ${countValue}`
+            )
+
+            recordCopierCount({
+              copierId: copier.copierId,
+              countType: varbind.oid,
+              countValue
+            })
+
+            // eslint-disable-next-line no-useless-assignment, sonarjs/no-dead-store
+            didRecordCurrentValue = true
+
+            // If we received a valid response, we can stop waiting for more responses
+            return
           }
         }
-      })
-    }
+
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (!didRecordCurrentValue) {
+          recordLastKnownCount(copier, oidToPoll)
+        }
+      }
+    })
   }
 }
 

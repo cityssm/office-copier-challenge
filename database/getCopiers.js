@@ -8,6 +8,7 @@ export default function getCopiers() {
         copierId,
         copierName,
         ipAddress,
+        oid,
         isActive
       FROM
         Copiers

@@ -2,6 +2,7 @@ export interface Copier {
   copierId: number
   copierName: string
   ipAddress: string
+  oid: string | null
   isActive: 0 | 1
 }
 
