@@ -83,7 +83,9 @@ export default function handler(_request, response) {
         copier.hourlyCounts = getHourlyMaximumValues(copier.hourlyCounts);
         copier.totalPrints = getTotalPrints(copier.hourlyCounts);
     }
-    const sortedByMostUsed = copierData.toSorted(compareByMostPrints);
+    const sortedByMostUsed = copierData
+        .filter((copier) => copier.hourlyCounts.length > 0)
+        .toSorted(compareByMostPrints);
     const nowMillis = Date.now();
     const durationOptions = DURATION_PRESETS.filter((durationPreset) => {
         if (durationPreset.days === 14 ||

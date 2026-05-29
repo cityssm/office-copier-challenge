@@ -1299,6 +1299,59 @@ function computeKpisForRange(
       .filter(([timeMillis]) => timeMillis >= cutoffMillis)
       .reduce((total, [, printCount]) => total + printCount, 0)
 
+  const getCopierDataRange = (
+    copier: DashboardCopier
+  ): {
+    startMillis: number
+    endMillis: number
+  } | undefined => {
+    if (copier.hourlyCounts.length === 0) {
+      return
+    }
+
+    return {
+      startMillis: copier.hourlyCounts[0].timeMillis,
+      endMillis: copier.hourlyCounts[copier.hourlyCounts.length - 1].timeMillis
+    }
+  }
+
+  const updateCopierRangeWarning = (
+    copierOptionElement: HTMLDivElement,
+    copier: DashboardCopier,
+    cutoffMillis: number
+  ): void => {
+    const rangeWarningElement = copierOptionElement.querySelector(
+      '.js-copier-range-warning'
+    )
+
+    if (!(rangeWarningElement instanceof HTMLSpanElement)) {
+      return
+    }
+
+    const copierDataRange = getCopierDataRange(copier)
+
+    if (copierDataRange === undefined) {
+      rangeWarningElement.hidden = true
+      rangeWarningElement.removeAttribute('title')
+      return
+    }
+
+    const hasFullRange =
+      copierDataRange.startMillis <= cutoffMillis &&
+      copierDataRange.endMillis >= Date.now() - HOUR_MILLIS
+
+    if (hasFullRange) {
+      rangeWarningElement.hidden = true
+      rangeWarningElement.removeAttribute('title')
+      return
+    }
+
+    rangeWarningElement.hidden = false
+    rangeWarningElement.title =
+      `Data available: ${formatTooltipDateTime(new Date(copierDataRange.startMillis))}` +
+      ` to ${formatTooltipDateTime(new Date(copierDataRange.endMillis))}`
+  }
+
   const getCopierTierIndex = (
     copierIndex: number,
     copierCount: number
@@ -1432,12 +1485,20 @@ function computeKpisForRange(
       const checkboxElement = document.querySelector<HTMLInputElement>(
         `.js-copier-checkbox[value="${copierCount.copierId}"]`
       )
-      const countElement = checkboxElement
-        ?.closest('.js-copier-option')
-        ?.querySelector('.js-copier-count')
+      const copierOptionElement = checkboxElement?.closest('.js-copier-option')
+      const countElement =
+        copierOptionElement?.querySelector<HTMLSpanElement>('.js-copier-count')
 
       if (countElement instanceof HTMLSpanElement) {
         countElement.textContent = copierCount.printCount.toLocaleString()
+      }
+
+      if (copierOptionElement instanceof HTMLDivElement) {
+        const copier = copierDataById.get(copierCount.copierId)
+
+        if (copier !== undefined) {
+          updateCopierRangeWarning(copierOptionElement, copier, cutoffMillis)
+        }
       }
     }
 

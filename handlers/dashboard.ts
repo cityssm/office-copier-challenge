@@ -130,7 +130,9 @@ export default function handler(_request: Request, response: Response): void {
     copier.totalPrints = getTotalPrints(copier.hourlyCounts)
   }
 
-  const sortedByMostUsed = copierData.toSorted(compareByMostPrints)
+  const sortedByMostUsed = copierData
+    .filter((copier) => copier.hourlyCounts.length > 0)
+    .toSorted(compareByMostPrints)
   const nowMillis = Date.now()
   const durationOptions = DURATION_PRESETS.filter((durationPreset) => {
     if (

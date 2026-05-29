@@ -158,6 +158,10 @@
                   <span class="is-sr-only"><%= copierTierLabel %></span>
                   <span>
                     <span class="js-copier-name"><%= copier.copierName %></span>
+                    <span class="icon is-small ml-1 js-copier-range-warning" hidden>
+                      <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                      <span class="is-sr-only">Limited data range</span>
+                    </span>
                     <small>
                       (<span class="js-copier-count"><%= copier.totalPrints.toLocaleString() %></span>
                       prints)
