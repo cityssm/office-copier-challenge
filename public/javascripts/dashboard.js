@@ -745,11 +745,14 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
         const totalPrints = dashboardData.copiers.reduce((total, copier) => total + getPrintCountInRange(copier, cutoffMillis), 0);
         const actualDataStartMillis = getActualDataStartMillis(dashboardData.copiers);
+        const hasIncompleteData = actualDataStartMillis !== undefined &&
+            actualDataStartMillis > cutoffMillis;
         const durationDataWarningItemElement = document.querySelector('#durationDataWarningItem');
         const durationDataWarningTextElement = document.querySelector('#durationDataWarningText');
         if (durationDataWarningItemElement instanceof HTMLElement &&
             durationDataWarningTextElement instanceof HTMLElement) {
-            if (actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis) {
+            if (actualDataStartMillis !== undefined &&
+                actualDataStartMillis > cutoffMillis) {
                 durationDataWarningTextElement.textContent = `Data available from ${formatShortDate(actualDataStartMillis)}`;
                 durationDataWarningItemElement.hidden = false;
             }
@@ -757,7 +760,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 durationDataWarningItemElement.hidden = true;
             }
         }
-        const totalPrintsContext = actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis
+        const totalPrintsContext = actualDataStartMillis !== undefined &&
+            actualDataStartMillis > cutoffMillis
             ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
             : durationLabel;
         setKpi('kpiTotalPrints', formatPrintCount(totalPrints), totalPrintsContext);
@@ -998,10 +1002,14 @@ function computeKpisForRange(copiers, cutoffMillis) {
         setTimeout(() => {
             refreshToastElement.hidden = false;
         }, REFRESH_TOAST_TIMEOUT_MILLIS);
-        document.querySelector('#refreshToastDismiss')?.addEventListener('click', () => {
+        document
+            .querySelector('#refreshToastDismiss')
+            ?.addEventListener('click', () => {
             refreshToastElement.hidden = true;
         });
-        document.querySelector('#refreshToastRefresh')?.addEventListener('click', () => {
+        document
+            .querySelector('#refreshToastRefresh')
+            ?.addEventListener('click', () => {
             location.reload();
         });
     }

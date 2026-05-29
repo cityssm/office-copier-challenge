@@ -201,7 +201,9 @@ function formatShortDate(timeMillis: number): string {
   })
 }
 
-function getActualDataStartMillis(copiers: DashboardCopier[]): number | undefined {
+function getActualDataStartMillis(
+  copiers: DashboardCopier[]
+): number | undefined {
   let min: number | undefined
 
   for (const copier of copiers) {
@@ -1213,9 +1215,12 @@ function computeKpisForRange(
       0
     )
 
-    const actualDataStartMillis = getActualDataStartMillis(dashboardData.copiers)
+    const actualDataStartMillis = getActualDataStartMillis(
+      dashboardData.copiers
+    )
     const hasIncompleteData =
-      actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis
+      actualDataStartMillis !== undefined &&
+      actualDataStartMillis > cutoffMillis
 
     const durationDataWarningItemElement = document.querySelector(
       '#durationDataWarningItem'
@@ -1228,7 +1233,10 @@ function computeKpisForRange(
       durationDataWarningItemElement instanceof HTMLElement &&
       durationDataWarningTextElement instanceof HTMLElement
     ) {
-      if (actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis) {
+      if (
+        actualDataStartMillis !== undefined &&
+        actualDataStartMillis > cutoffMillis
+      ) {
         durationDataWarningTextElement.textContent = `Data available from ${formatShortDate(actualDataStartMillis)}`
         durationDataWarningItemElement.hidden = false
       } else {
@@ -1237,7 +1245,8 @@ function computeKpisForRange(
     }
 
     const totalPrintsContext =
-      actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis
+      actualDataStartMillis !== undefined &&
+      actualDataStartMillis > cutoffMillis
         ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
         : durationLabel
 
