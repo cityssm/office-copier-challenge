@@ -958,6 +958,21 @@ function computeKpisForRange(
         selectedMode: false
       },
 
+      toolbox: {
+        feature: {
+          dataZoom: {
+            yAxisIndex: 'none'
+          },
+          restore: {}
+        }
+      },
+
+      dataZoom: [
+        {
+          type: 'inside'
+        }
+      ],
+
       xAxis: {
         type: 'time',
 

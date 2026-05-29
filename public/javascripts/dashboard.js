@@ -596,6 +596,19 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 type: 'scroll',
                 selectedMode: false
             },
+            toolbox: {
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: 'none'
+                    },
+                    restore: {}
+                }
+            },
+            dataZoom: [
+                {
+                    type: 'inside'
+                }
+            ],
             xAxis: {
                 type: 'time',
                 axisLabel: useDailyCounts
