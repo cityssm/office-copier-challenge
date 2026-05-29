@@ -89,7 +89,8 @@ function formatFractionalEstimate(value) {
     });
 }
 function calculateEstimatedPaperImpact(totalPrints) {
-    const estimatedPages = Math.round(totalPrints * ((1 - DOUBLE_SIDED_PRINT_SHARE) + DOUBLE_SIDED_PRINT_SHARE / 2));
+    const estimatedPages = Math.round(totalPrints *
+        ((1 - DOUBLE_SIDED_PRINT_SHARE) + DOUBLE_SIDED_PRINT_SHARE / 2));
     const estimatedReams = estimatedPages / PAGES_PER_REAM;
     const estimatedCartons = estimatedReams / REAMS_PER_CARTON;
     const estimatedTrees = estimatedCartons * TREES_PER_CARTON;
