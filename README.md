@@ -93,3 +93,13 @@ of these tips into practice!
 - **Cancel unnecessary print jobs** before they complete.
 - **Use electronic tools** like fillable forms, electronic signatures,
   and electronic redaction instead of printing and handling physical documents.
+
+## Past Green Team Initiatives
+
+[**National Dragonfly Day**](https://github.com/cityssm/national-dragonfly-day)<br />
+A simple "swat the mosquito" game for the 2025 National Dragonfly Day
+door decorating contest.
+
+[**National Bee Day**](https://github.com/cityssm/national-bee-day)<br />
+A "spot the queen bee" game for the 2024 National Bee Day door
+competiton.
