@@ -1309,9 +1309,22 @@ function computeKpisForRange(
       return
     }
 
+    let startMillis = copier.hourlyCounts[0].timeMillis
+    let endMillis = startMillis
+
+    for (const hourlyCount of copier.hourlyCounts) {
+      if (hourlyCount.timeMillis < startMillis) {
+        startMillis = hourlyCount.timeMillis
+      }
+
+      if (hourlyCount.timeMillis > endMillis) {
+        endMillis = hourlyCount.timeMillis
+      }
+    }
+
     return {
-      startMillis: copier.hourlyCounts[0].timeMillis,
-      endMillis: copier.hourlyCounts[copier.hourlyCounts.length - 1].timeMillis
+      startMillis,
+      endMillis
     }
   }
 
@@ -1320,7 +1333,8 @@ function computeKpisForRange(
   const updateCopierRangeWarning = (
     copierOptionElement: HTMLDivElement,
     copier: DashboardCopier,
-    cutoffMillis: number
+    cutoffMillis: number,
+    expectedDataEndMillis: number
   ): void => {
     const rangeWarningElement = copierOptionElement.querySelector(
       '.js-copier-range-warning'
@@ -1340,7 +1354,7 @@ function computeKpisForRange(
 
     const hasFullRange =
       copierDataRange.startMillis <= cutoffMillis &&
-      copierDataRange.endMillis >= getExpectedDataEndMillis()
+      copierDataRange.endMillis >= expectedDataEndMillis
 
     if (hasFullRange) {
       rangeWarningElement.hidden = true
@@ -1481,6 +1495,7 @@ function computeKpisForRange(
 
   const updateCopierCountsForDuration = (): void => {
     const { cutoffMillis } = getDurationRange()
+    const expectedDataEndMillis = getExpectedDataEndMillis()
     const copierCounts = getPrintCountByCopier(cutoffMillis)
 
     for (const copierCount of copierCounts) {
@@ -1499,7 +1514,12 @@ function computeKpisForRange(
         const copier = copierDataById.get(copierCount.copierId)
 
         if (copier !== undefined) {
-          updateCopierRangeWarning(copierOptionElement, copier, cutoffMillis)
+          updateCopierRangeWarning(
+            copierOptionElement,
+            copier,
+            cutoffMillis,
+            expectedDataEndMillis
+          )
         }
       }
     }

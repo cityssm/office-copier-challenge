@@ -790,13 +790,23 @@ function computeKpisForRange(copiers, cutoffMillis) {
         if (copier.hourlyCounts.length === 0) {
             return;
         }
+        let startMillis = copier.hourlyCounts[0].timeMillis;
+        let endMillis = startMillis;
+        for (const hourlyCount of copier.hourlyCounts) {
+            if (hourlyCount.timeMillis < startMillis) {
+                startMillis = hourlyCount.timeMillis;
+            }
+            if (hourlyCount.timeMillis > endMillis) {
+                endMillis = hourlyCount.timeMillis;
+            }
+        }
         return {
-            startMillis: copier.hourlyCounts[0].timeMillis,
-            endMillis: copier.hourlyCounts[copier.hourlyCounts.length - 1].timeMillis
+            startMillis,
+            endMillis
         };
     };
     const getExpectedDataEndMillis = () => Date.now() - HOUR_MILLIS;
-    const updateCopierRangeWarning = (copierOptionElement, copier, cutoffMillis) => {
+    const updateCopierRangeWarning = (copierOptionElement, copier, cutoffMillis, expectedDataEndMillis) => {
         const rangeWarningElement = copierOptionElement.querySelector('.js-copier-range-warning');
         if (!(rangeWarningElement instanceof HTMLSpanElement)) {
             return;
@@ -808,7 +818,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             return;
         }
         const hasFullRange = copierDataRange.startMillis <= cutoffMillis &&
-            copierDataRange.endMillis >= getExpectedDataEndMillis();
+            copierDataRange.endMillis >= expectedDataEndMillis;
         if (hasFullRange) {
             rangeWarningElement.hidden = true;
             rangeWarningElement.removeAttribute('title');
@@ -891,6 +901,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     };
     const updateCopierCountsForDuration = () => {
         const { cutoffMillis } = getDurationRange();
+        const expectedDataEndMillis = getExpectedDataEndMillis();
         const copierCounts = getPrintCountByCopier(cutoffMillis);
         for (const copierCount of copierCounts) {
             const checkboxElement = document.querySelector(`.js-copier-checkbox[value="${copierCount.copierId}"]`);
@@ -902,7 +913,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             if (copierOptionElement instanceof HTMLDivElement) {
                 const copier = copierDataById.get(copierCount.copierId);
                 if (copier !== undefined) {
-                    updateCopierRangeWarning(copierOptionElement, copier, cutoffMillis);
+                    updateCopierRangeWarning(copierOptionElement, copier, cutoffMillis, expectedDataEndMillis);
                 }
             }
         }
