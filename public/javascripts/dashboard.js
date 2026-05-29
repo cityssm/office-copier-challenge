@@ -811,7 +811,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             endMillis
         };
     };
-    const getExpectedDataEndMillis = () => Date.now() - HOUR_MILLIS;
+    const getExpectedDataEndMillis = () => normalizeToHour(Date.now() - HOUR_MILLIS);
     const updateCopierRangeWarning = (copierOptionElement, copier, cutoffMillis, expectedDataEndMillis) => {
         const rangeWarningElement = copierOptionElement.querySelector('.js-copier-range-warning');
         if (!(rangeWarningElement instanceof HTMLSpanElement)) {

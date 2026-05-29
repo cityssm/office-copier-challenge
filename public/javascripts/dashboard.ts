@@ -1334,7 +1334,8 @@ function computeKpisForRange(
     }
   }
 
-  const getExpectedDataEndMillis = (): number => Date.now() - HOUR_MILLIS
+  const getExpectedDataEndMillis = (): number =>
+    normalizeToHour(Date.now() - HOUR_MILLIS)
 
   const updateCopierRangeWarning = (
     copierOptionElement: HTMLDivElement,
