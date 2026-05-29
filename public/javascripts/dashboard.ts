@@ -974,6 +974,8 @@ function computeKpisForRange(
 
       xAxis: {
         type: 'time',
+        min: cutoffMillis,
+        max: nowMillis,
 
         axisLabel: useDailyCounts
           ? {}

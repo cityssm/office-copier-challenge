@@ -610,6 +610,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
             ],
             xAxis: {
                 type: 'time',
+                min: cutoffMillis,
+                max: nowMillis,
                 axisLabel: useDailyCounts
                     ? {}
                     : {
