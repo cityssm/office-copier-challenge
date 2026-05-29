@@ -1098,7 +1098,7 @@ function computeKpisForRange(
       copierStats
         .map(
           (copierStat) =>
-            `${copierStat.copierName}, ${formatTooltipDateTime(new Date(copierStat.startTimeMillis))} to ${formatTooltipDateTime(new Date(copierStat.endTimeMillis))}`
+            `${copierStat.copierName}\n${formatTooltipDateTime(new Date(copierStat.startTimeMillis))} to ${formatTooltipDateTime(new Date(copierStat.endTimeMillis))}`
         )
         .join('\n')
     const formatPrintCount = (prints: number): string =>
@@ -1130,7 +1130,7 @@ function computeKpisForRange(
           kpis.busiestCopierHour.copierHours
             .map(
               (copierHour) =>
-                `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))}`
+                `${copierHour.copierName}\n${formatTooltipDateTime(new Date(copierHour.timeMillis))}`
             )
             .join('\n')
         )

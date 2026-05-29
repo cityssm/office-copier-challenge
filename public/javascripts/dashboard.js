@@ -672,7 +672,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
         const noDataContext = 'No data available';
         const formatCopierNames = (copierNames) => copierNames.join('\n');
         const formatConsecutiveHoursCopierStats = (copierStats) => copierStats
-            .map((copierStat) => `${copierStat.copierName}, ${formatTooltipDateTime(new Date(copierStat.startTimeMillis))} to ${formatTooltipDateTime(new Date(copierStat.endTimeMillis))}`)
+            .map((copierStat) => `${copierStat.copierName}\n${formatTooltipDateTime(new Date(copierStat.startTimeMillis))} to ${formatTooltipDateTime(new Date(copierStat.endTimeMillis))}`)
             .join('\n');
         const formatPrintCount = (prints) => `${prints.toLocaleString()} prints`;
         const formatHourCount = (hours) => `${hours.toLocaleString()} ${hours === 1 ? 'hour' : 'hours'}`;
@@ -692,7 +692,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
             else {
                 setKpi('kpiBusiestCopierHour', formatPrintCount(kpis.busiestCopierHour.prints), kpis.busiestCopierHour.copierHours
-                    .map((copierHour) => `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))}`)
+                    .map((copierHour) => `${copierHour.copierName}\n${formatTooltipDateTime(new Date(copierHour.timeMillis))}`)
                     .join('\n'));
             }
         }
