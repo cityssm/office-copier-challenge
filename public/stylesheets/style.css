@@ -70,3 +70,9 @@ html {
   white-space: pre-line;
   word-break: break-word;
 }
+
+.kpi-impact-value {
+  color: hsl(0deg, 0%, 14%);
+  font-size: 1.1rem;
+  font-weight: 700;
+}

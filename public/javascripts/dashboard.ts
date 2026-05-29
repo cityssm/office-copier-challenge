@@ -9,6 +9,10 @@ const DEFAULT_SELECTED_COPIER_COUNT = 9
 const SELECTED_COPIER_IDS_STORAGE_KEY =
   'office-copier-challenge.selectedCopierIds'
 const LOW_PRINT_THRESHOLD = 5
+const DOUBLE_SIDED_PRINT_SHARE = 0.5
+const PAGES_PER_REAM = 500
+const REAMS_PER_CARTON = 10
+const TREES_PER_CARTON = 0.6
 const COPIER_BAND_CLASSES = [
   'has-background-danger-light',
   'has-background-warning-light',
@@ -156,6 +160,38 @@ function formatTooltipDateTime(date: Date): string {
     day: 'numeric',
     year: 'numeric'
   })} ${formatHourAmPm(date)}`
+}
+
+function formatEstimate(value: number): string {
+  return value.toLocaleString()
+}
+
+function formatFractionalEstimate(value: number): string {
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits: 2
+  })
+}
+
+function calculateEstimatedPaperImpact(totalPrints: number): {
+  estimatedPages: number
+  estimatedReams: number
+  estimatedCartons: number
+  estimatedTrees: number
+} {
+  const estimatedPages = Math.round(
+    totalPrints *
+      ((1 - DOUBLE_SIDED_PRINT_SHARE) + DOUBLE_SIDED_PRINT_SHARE / 2)
+  )
+  const estimatedReams = estimatedPages / PAGES_PER_REAM
+  const estimatedCartons = estimatedReams / REAMS_PER_CARTON
+  const estimatedTrees = estimatedCartons * TREES_PER_CARTON
+
+  return {
+    estimatedPages,
+    estimatedReams,
+    estimatedCartons,
+    estimatedTrees
+  }
 }
 
 function clampRange(
@@ -1033,6 +1069,38 @@ function computeKpisForRange(
       0
     )
     setKpi('kpiTotalPrints', formatPrintCount(totalPrints), durationLabel)
+
+    const totalPrintsImpact = calculateEstimatedPaperImpact(totalPrints)
+    const estimatedPagesElement = document.querySelector('#kpiEstimatedPagesValue')
+    const estimatedReamsElement = document.querySelector('#kpiEstimatedReamsValue')
+    const estimatedCartonsElement = document.querySelector(
+      '#kpiEstimatedCartonsValue'
+    )
+    const estimatedTreesElement = document.querySelector('#kpiEstimatedTreesValue')
+
+    if (estimatedPagesElement instanceof HTMLElement) {
+      estimatedPagesElement.textContent = formatEstimate(
+        totalPrintsImpact.estimatedPages
+      )
+    }
+
+    if (estimatedReamsElement instanceof HTMLElement) {
+      estimatedReamsElement.textContent = formatFractionalEstimate(
+        totalPrintsImpact.estimatedReams
+      )
+    }
+
+    if (estimatedCartonsElement instanceof HTMLElement) {
+      estimatedCartonsElement.textContent = formatFractionalEstimate(
+        totalPrintsImpact.estimatedCartons
+      )
+    }
+
+    if (estimatedTreesElement instanceof HTMLElement) {
+      estimatedTreesElement.textContent = formatFractionalEstimate(
+        totalPrintsImpact.estimatedTrees
+      )
+    }
   }
 
   const getPrintCountInRange = (
