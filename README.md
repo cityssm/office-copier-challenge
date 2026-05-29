@@ -94,6 +94,15 @@ of these tips into practice!
 - **Use electronic tools** like fillable forms, electronic signatures,
   and electronic redaction instead of printing and handling physical documents.
 
+## Credits
+
+The **image of Agawa Canyon** used as the dashboard background is based on work
+by **thomassalzano**, posted on
+[**Pixabay**](https://pixabay.com/photos/agawa-canyon-nature-mountain-977759/).
+
+The **tree estimate** is based on data provided by
+[**Conservatree**](http://conservatree.org/learn/EnviroIssues/TreeStats.shtml).
+
 ## Past Green Team Initiatives
 
 [**National Dragonfly Day**](https://github.com/cityssm/national-dragonfly-day)<br />
