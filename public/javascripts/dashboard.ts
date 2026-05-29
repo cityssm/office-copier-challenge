@@ -1228,7 +1228,7 @@ function computeKpisForRange(
       durationDataWarningItemElement instanceof HTMLElement &&
       durationDataWarningTextElement instanceof HTMLElement
     ) {
-      if (hasIncompleteData) {
+      if (actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis) {
         durationDataWarningTextElement.textContent = `Data available from ${formatShortDate(actualDataStartMillis)}`
         durationDataWarningItemElement.hidden = false
       } else {
@@ -1236,9 +1236,10 @@ function computeKpisForRange(
       }
     }
 
-    const totalPrintsContext = hasIncompleteData
-      ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
-      : durationLabel
+    const totalPrintsContext =
+      actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis
+        ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
+        : durationLabel
 
     setKpi('kpiTotalPrints', formatPrintCount(totalPrints), totalPrintsContext)
 

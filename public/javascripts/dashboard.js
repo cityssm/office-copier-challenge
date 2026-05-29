@@ -745,12 +745,11 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
         const totalPrints = dashboardData.copiers.reduce((total, copier) => total + getPrintCountInRange(copier, cutoffMillis), 0);
         const actualDataStartMillis = getActualDataStartMillis(dashboardData.copiers);
-        const hasIncompleteData = actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis;
         const durationDataWarningItemElement = document.querySelector('#durationDataWarningItem');
         const durationDataWarningTextElement = document.querySelector('#durationDataWarningText');
         if (durationDataWarningItemElement instanceof HTMLElement &&
             durationDataWarningTextElement instanceof HTMLElement) {
-            if (hasIncompleteData) {
+            if (actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis) {
                 durationDataWarningTextElement.textContent = `Data available from ${formatShortDate(actualDataStartMillis)}`;
                 durationDataWarningItemElement.hidden = false;
             }
@@ -758,7 +757,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 durationDataWarningItemElement.hidden = true;
             }
         }
-        const totalPrintsContext = hasIncompleteData
+        const totalPrintsContext = actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis
             ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
             : durationLabel;
         setKpi('kpiTotalPrints', formatPrintCount(totalPrints), totalPrintsContext);
