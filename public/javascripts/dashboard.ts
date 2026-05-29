@@ -193,7 +193,29 @@ function calculateEstimatedPaperImpact(totalPrints: number): {
   }
 }
 
-function clampRange(
+function formatShortDate(timeMillis: number): string {
+  return new Date(timeMillis).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
+function getActualDataStartMillis(copiers: DashboardCopier[]): number | undefined {
+  let min: number | undefined
+
+  for (const copier of copiers) {
+    for (const point of copier.hourlyCounts) {
+      if (min === undefined || point.timeMillis < min) {
+        min = point.timeMillis
+      }
+    }
+  }
+
+  return min
+}
+
+
   rangeStartMillis: number,
   rangeEndMillis: number,
   minMillis: number,
@@ -1190,7 +1212,35 @@ function computeKpisForRange(
       (total, copier) => total + getPrintCountInRange(copier, cutoffMillis),
       0
     )
-    setKpi('kpiTotalPrints', formatPrintCount(totalPrints), durationLabel)
+
+    const actualDataStartMillis = getActualDataStartMillis(dashboardData.copiers)
+    const hasIncompleteData =
+      actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis
+
+    const durationDataWarningItemElement = document.querySelector(
+      '#durationDataWarningItem'
+    )
+    const durationDataWarningTextElement = document.querySelector(
+      '#durationDataWarningText'
+    )
+
+    if (
+      durationDataWarningItemElement instanceof HTMLElement &&
+      durationDataWarningTextElement instanceof HTMLElement
+    ) {
+      if (hasIncompleteData) {
+        durationDataWarningTextElement.textContent = `Data available from ${formatShortDate(actualDataStartMillis)}`
+        durationDataWarningItemElement.hidden = false
+      } else {
+        durationDataWarningItemElement.hidden = true
+      }
+    }
+
+    const totalPrintsContext = hasIncompleteData
+      ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
+      : durationLabel
+
+    setKpi('kpiTotalPrints', formatPrintCount(totalPrints), totalPrintsContext)
 
     const totalPrintsImpact = calculateEstimatedPaperImpact(totalPrints)
     const estimatedPagesElement = document.querySelector(
@@ -1559,4 +1609,26 @@ function computeKpisForRange(
   window.addEventListener('resize', () => {
     chart.resize()
   })
+
+  const REFRESH_TOAST_TIMEOUT_MILLIS = 20 * 60 * 1000
+
+  const refreshToastElement = document.querySelector('#refreshToast')
+
+  if (refreshToastElement instanceof HTMLElement) {
+    setTimeout(() => {
+      refreshToastElement.hidden = false
+    }, REFRESH_TOAST_TIMEOUT_MILLIS)
+
+    document
+      .querySelector('#refreshToastDismiss')
+      ?.addEventListener('click', () => {
+        refreshToastElement.hidden = true
+      })
+
+    document
+      .querySelector('#refreshToastRefresh')
+      ?.addEventListener('click', () => {
+        location.reload()
+      })
+  }
 })()

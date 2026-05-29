@@ -100,6 +100,24 @@ function calculateEstimatedPaperImpact(totalPrints) {
         estimatedTrees
     };
 }
+function formatShortDate(timeMillis) {
+    return new Date(timeMillis).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
+function getActualDataStartMillis(copiers) {
+    let min;
+    for (const copier of copiers) {
+        for (const point of copier.hourlyCounts) {
+            if (min === undefined || point.timeMillis < min) {
+                min = point.timeMillis;
+            }
+        }
+    }
+    return min;
+}
 function clampRange(rangeStartMillis, rangeEndMillis, minMillis, maxMillis) {
     const clampedStartMillis = Math.max(rangeStartMillis, minMillis);
     const clampedEndMillis = Math.min(rangeEndMillis, maxMillis);
@@ -726,7 +744,24 @@ function computeKpisForRange(copiers, cutoffMillis) {
             setKpi('kpiLowPrintHours', formatHourCount(kpis.mostHoursLowPrintOverall.hours), formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames));
         }
         const totalPrints = dashboardData.copiers.reduce((total, copier) => total + getPrintCountInRange(copier, cutoffMillis), 0);
-        setKpi('kpiTotalPrints', formatPrintCount(totalPrints), durationLabel);
+        const actualDataStartMillis = getActualDataStartMillis(dashboardData.copiers);
+        const hasIncompleteData = actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis;
+        const durationDataWarningItemElement = document.querySelector('#durationDataWarningItem');
+        const durationDataWarningTextElement = document.querySelector('#durationDataWarningText');
+        if (durationDataWarningItemElement instanceof HTMLElement &&
+            durationDataWarningTextElement instanceof HTMLElement) {
+            if (hasIncompleteData) {
+                durationDataWarningTextElement.textContent = `Data available from ${formatShortDate(actualDataStartMillis)}`;
+                durationDataWarningItemElement.hidden = false;
+            }
+            else {
+                durationDataWarningItemElement.hidden = true;
+            }
+        }
+        const totalPrintsContext = hasIncompleteData
+            ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
+            : durationLabel;
+        setKpi('kpiTotalPrints', formatPrintCount(totalPrints), totalPrintsContext);
         const totalPrintsImpact = calculateEstimatedPaperImpact(totalPrints);
         const estimatedPagesElement = document.querySelector('#kpiEstimatedPagesValue');
         const estimatedReamsElement = document.querySelector('#kpiEstimatedReamsValue');
@@ -958,4 +993,17 @@ function computeKpisForRange(copiers, cutoffMillis) {
     window.addEventListener('resize', () => {
         chart.resize();
     });
+    const REFRESH_TOAST_TIMEOUT_MILLIS = 20 * 60 * 1000;
+    const refreshToastElement = document.querySelector('#refreshToast');
+    if (refreshToastElement instanceof HTMLElement) {
+        setTimeout(() => {
+            refreshToastElement.hidden = false;
+        }, REFRESH_TOAST_TIMEOUT_MILLIS);
+        document.querySelector('#refreshToastDismiss')?.addEventListener('click', () => {
+            refreshToastElement.hidden = true;
+        });
+        document.querySelector('#refreshToastRefresh')?.addEventListener('click', () => {
+            location.reload();
+        });
+    }
 })();
