@@ -600,8 +600,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 feature: {
                     dataZoom: {
                         yAxisIndex: 'none'
-                    },
-                    restore: {}
+                    }
                 }
             },
             dataZoom: [

@@ -962,8 +962,7 @@ function computeKpisForRange(
         feature: {
           dataZoom: {
             yAxisIndex: 'none'
-          },
-          restore: {}
+          }
         }
       },
 
