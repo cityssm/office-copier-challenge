@@ -76,3 +76,12 @@ html {
   font-size: 1.1rem;
   font-weight: 700;
 }
+
+#refreshToast {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 100;
+  max-width: 320px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
