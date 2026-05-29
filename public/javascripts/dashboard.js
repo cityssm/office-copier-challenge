@@ -257,23 +257,38 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
     }
     const longestTopRunByCopierName = new Map();
+    const longestTopRunRangeByCopierName = new Map();
     for (const { copier } of copierHourlyDeltas) {
         let currentRun = 0;
         let previousWasTop = false;
         let longestRun = 0;
+        let currentRunStartMillis;
         for (let index = 0; index < allHours.length; index += 1) {
             const timeMillis = allHours[index];
             const topCopierNames = hourTopCopierNames.get(timeMillis) ?? [];
             const isTopCopier = topCopierNames.includes(copier.copierName);
             const isConsecutive = index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS;
             if (isTopCopier) {
-                currentRun = isConsecutive && previousWasTop ? currentRun + 1 : 1;
+                if (isConsecutive && previousWasTop) {
+                    currentRun += 1;
+                }
+                else {
+                    currentRun = 1;
+                    currentRunStartMillis = timeMillis;
+                }
             }
             else {
                 currentRun = 0;
+                currentRunStartMillis = undefined;
             }
             previousWasTop = isTopCopier;
-            longestRun = Math.max(longestRun, currentRun);
+            if (currentRun > longestRun && currentRunStartMillis !== undefined) {
+                longestRun = currentRun;
+                longestTopRunRangeByCopierName.set(copier.copierName, [
+                    currentRunStartMillis,
+                    timeMillis
+                ]);
+            }
         }
         longestTopRunByCopierName.set(copier.copierName, longestRun);
     }
@@ -283,20 +298,46 @@ function computeKpisForRange(copiers, cutoffMillis) {
             .filter(([, run]) => run === longestTopRun)
             .map(([copierName]) => copierName), true)
         : [];
+    const longestTopCopierStats = longestTopCopierNames.flatMap((copierName) => {
+        const longestRunRange = longestTopRunRangeByCopierName.get(copierName);
+        if (longestRunRange === undefined) {
+            return [];
+        }
+        return [{
+            copierName,
+            startTimeMillis: longestRunRange[0],
+            endTimeMillis: longestRunRange[1]
+        }];
+    });
     const longestActiveRunByCopierName = new Map();
+    const longestActiveRunRangeByCopierName = new Map();
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
         let currentRun = 0;
         let longestRun = 0;
+        let currentRunStartMillis;
         for (let index = 0; index < hourlyDeltas.length; index += 1) {
             const [timeMillis, prints] = hourlyDeltas[index];
             const isConsecutive = index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS;
             if (prints > 0) {
-                currentRun = isConsecutive && currentRun > 0 ? currentRun + 1 : 1;
+                if (isConsecutive && currentRun > 0) {
+                    currentRun += 1;
+                }
+                else {
+                    currentRun = 1;
+                    currentRunStartMillis = timeMillis;
+                }
             }
             else {
                 currentRun = 0;
+                currentRunStartMillis = undefined;
             }
-            longestRun = Math.max(longestRun, currentRun);
+            if (currentRun > longestRun && currentRunStartMillis !== undefined) {
+                longestRun = currentRun;
+                longestActiveRunRangeByCopierName.set(copier.copierName, [
+                    currentRunStartMillis,
+                    timeMillis
+                ]);
+            }
         }
         longestActiveRunByCopierName.set(copier.copierName, longestRun);
     }
@@ -306,7 +347,19 @@ function computeKpisForRange(copiers, cutoffMillis) {
             .filter(([, run]) => run === longestActiveRun)
             .map(([copierName]) => copierName), true)
         : [];
+    const longestActiveCopierStats = longestActiveCopierNames.flatMap((copierName) => {
+        const longestRunRange = longestActiveRunRangeByCopierName.get(copierName);
+        if (longestRunRange === undefined) {
+            return [];
+        }
+        return [{
+            copierName,
+            startTimeMillis: longestRunRange[0],
+            endTimeMillis: longestRunRange[1]
+        }];
+    });
     const longestLowRunByCopierName = new Map();
+    const longestLowRunRangeByCopierName = new Map();
     const longestLowRunPrintsByCopierName = new Map();
     const lowPrintHoursByCopierName = new Map();
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
@@ -314,6 +367,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
         let currentRunPrints = 0;
         let longestRun = 0;
         let longestRunPrints;
+        let currentRunStartMillis;
         let lowPrintHours = 0;
         for (let index = 0; index < hourlyDeltas.length; index += 1) {
             const [timeMillis, prints] = hourlyDeltas[index];
@@ -327,20 +381,32 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 else {
                     currentRun = 1;
                     currentRunPrints = prints;
+                    currentRunStartMillis = timeMillis;
                 }
             }
             else {
                 currentRun = 0;
                 currentRunPrints = 0;
+                currentRunStartMillis = undefined;
             }
-            if (currentRun > longestRun) {
+            if (currentRun > longestRun &&
+                currentRunStartMillis !== undefined) {
                 longestRun = currentRun;
                 longestRunPrints = currentRunPrints;
+                longestLowRunRangeByCopierName.set(copier.copierName, [
+                    currentRunStartMillis,
+                    timeMillis
+                ]);
             }
             else if (currentRun === longestRun &&
                 currentRun > 0 &&
-                (longestRunPrints === undefined || currentRunPrints < longestRunPrints)) {
+                (longestRunPrints === undefined || currentRunPrints < longestRunPrints) &&
+                currentRunStartMillis !== undefined) {
                 longestRunPrints = currentRunPrints;
+                longestLowRunRangeByCopierName.set(copier.copierName, [
+                    currentRunStartMillis,
+                    timeMillis
+                ]);
             }
         }
         longestLowRunByCopierName.set(copier.copierName, longestRun);
@@ -353,10 +419,18 @@ function computeKpisForRange(copiers, cutoffMillis) {
             .filter(([, run]) => run === longestLowRun)
             .map(([copierName]) => copierName), false)
         : [];
-    const longestLowCopierStats = longestLowCopierNames.map((copierName) => ({
-        copierName,
-        prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0
-    }));
+    const longestLowCopierStats = longestLowCopierNames.flatMap((copierName) => {
+        const longestRunRange = longestLowRunRangeByCopierName.get(copierName);
+        if (longestRunRange === undefined) {
+            return [];
+        }
+        return [{
+            copierName,
+            prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0,
+            startTimeMillis: longestRunRange[0],
+            endTimeMillis: longestRunRange[1]
+        }];
+    });
     const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0);
     const mostLowPrintHourCopierNames = mostLowPrintHours > 0
         ?
@@ -370,11 +444,11 @@ function computeKpisForRange(copiers, cutoffMillis) {
             ? undefined
             : { timeMillis: busiestHourTime, totalPrints: busiestHourTotal },
         busiestCopierHour,
-        mostConsecutiveTopCopier: longestTopCopierNames.length > 0 && longestTopRun > 1
-            ? { copierNames: longestTopCopierNames, hours: longestTopRun }
+        mostConsecutiveTopCopier: longestTopCopierStats.length > 0 && longestTopRun > 1
+            ? { copierStats: longestTopCopierStats, hours: longestTopRun }
             : undefined,
-        mostConsecutiveActiveHours: longestActiveCopierNames.length > 0 && longestActiveRun > 1
-            ? { copierNames: longestActiveCopierNames, hours: longestActiveRun }
+        mostConsecutiveActiveHours: longestActiveCopierStats.length > 0 && longestActiveRun > 1
+            ? { copierStats: longestActiveCopierStats, hours: longestActiveRun }
             : undefined,
         mostConsecutiveLowPrint: longestLowCopierStats.length > 0 && longestLowRun > 1
             ? { copierStats: longestLowCopierStats, hours: longestLowRun }
@@ -597,6 +671,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
         const noDataValue = '—';
         const noDataContext = 'No data available';
         const formatCopierNames = (copierNames) => copierNames.join('\n');
+        const formatConsecutiveHoursCopierStats = (copierStats) => copierStats
+            .map((copierStat) => `${copierStat.copierName}, ${formatTooltipDateTime(new Date(copierStat.startTimeMillis))} to ${formatTooltipDateTime(new Date(copierStat.endTimeMillis))}`)
+            .join('\n');
         const formatPrintCount = (prints) => `${prints.toLocaleString()} prints`;
         const formatHourCount = (hours) => `${hours.toLocaleString()} ${hours === 1 ? 'hour' : 'hours'}`;
         if (kpis.busiestHour === undefined) {
@@ -623,19 +700,19 @@ function computeKpisForRange(copiers, cutoffMillis) {
             setKpi('kpiTopCopierStreak', noDataValue, noDataContext);
         }
         else {
-            setKpi('kpiTopCopierStreak', formatHourCount(kpis.mostConsecutiveTopCopier.hours), formatCopierNames(kpis.mostConsecutiveTopCopier.copierNames));
+            setKpi('kpiTopCopierStreak', formatHourCount(kpis.mostConsecutiveTopCopier.hours), formatConsecutiveHoursCopierStats(kpis.mostConsecutiveTopCopier.copierStats));
         }
         if (kpis.mostConsecutiveActiveHours === undefined) {
             setKpi('kpiActiveStreak', noDataValue, noDataContext);
         }
         else {
-            setKpi('kpiActiveStreak', formatHourCount(kpis.mostConsecutiveActiveHours.hours), formatCopierNames(kpis.mostConsecutiveActiveHours.copierNames));
+            setKpi('kpiActiveStreak', formatHourCount(kpis.mostConsecutiveActiveHours.hours), formatConsecutiveHoursCopierStats(kpis.mostConsecutiveActiveHours.copierStats));
         }
         if (kpis.mostConsecutiveLowPrint === undefined) {
             setKpi('kpiLowPrintStreak', noDataValue, noDataContext);
         }
         else {
-            setKpi('kpiLowPrintStreak', formatHourCount(kpis.mostConsecutiveLowPrint.hours), formatCopierNames(kpis.mostConsecutiveLowPrint.copierStats.map((copierStats) => copierStats.copierName)));
+            setKpi('kpiLowPrintStreak', formatHourCount(kpis.mostConsecutiveLowPrint.hours), formatConsecutiveHoursCopierStats(kpis.mostConsecutiveLowPrint.copierStats));
         }
         if (kpis.mostHoursLowPrintOverall === undefined) {
             setKpi('kpiLowPrintHours', noDataValue, noDataContext);
@@ -824,11 +901,20 @@ function computeKpisForRange(copiers, cutoffMillis) {
     const aboutModalElement = document.querySelector('#aboutModal');
     const aboutModalCloseElements = document.querySelectorAll('.js-about-modal-close');
     if (aboutModalElement instanceof HTMLDivElement) {
+        const aboutVideoElement = aboutModalElement.querySelector('video');
         const openAboutModal = () => {
+            if (aboutVideoElement instanceof HTMLVideoElement) {
+                aboutVideoElement.currentTime = 0;
+                void aboutVideoElement.play();
+            }
             aboutModalElement.classList.add('is-active');
         };
         const closeAboutModal = () => {
             aboutModalElement.classList.remove('is-active');
+            if (aboutVideoElement instanceof HTMLVideoElement) {
+                aboutVideoElement.pause();
+                aboutVideoElement.currentTime = 0;
+            }
         };
         document.querySelector('#aboutLink')?.addEventListener('click', (event) => {
             event.preventDefault();
