@@ -215,7 +215,7 @@ function getActualDataStartMillis(copiers: DashboardCopier[]): number | undefine
   return min
 }
 
-
+function clampRange(
   rangeStartMillis: number,
   rangeEndMillis: number,
   minMillis: number,
