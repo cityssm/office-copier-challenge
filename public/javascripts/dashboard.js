@@ -813,18 +813,18 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
         const copierDataRange = getCopierDataRange(copier);
         if (copierDataRange === undefined) {
-            rangeWarningElement.hidden = true;
+            rangeWarningElement.classList.add('is-hidden');
             rangeWarningElement.removeAttribute('title');
             return;
         }
         const hasFullRange = copierDataRange.startMillis <= cutoffMillis &&
             copierDataRange.endMillis >= expectedDataEndMillis;
         if (hasFullRange) {
-            rangeWarningElement.hidden = true;
+            rangeWarningElement.classList.add('is-hidden');
             rangeWarningElement.removeAttribute('title');
             return;
         }
-        rangeWarningElement.hidden = false;
+        rangeWarningElement.classList.remove('is-hidden');
         rangeWarningElement.title =
             `Data available: ${formatTooltipDateTime(new Date(copierDataRange.startMillis))}` +
                 ` to ${formatTooltipDateTime(new Date(copierDataRange.endMillis))}`;

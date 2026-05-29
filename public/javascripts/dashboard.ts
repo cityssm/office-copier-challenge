@@ -1347,7 +1347,7 @@ function computeKpisForRange(
     const copierDataRange = getCopierDataRange(copier)
 
     if (copierDataRange === undefined) {
-      rangeWarningElement.hidden = true
+      rangeWarningElement.classList.add('is-hidden')
       rangeWarningElement.removeAttribute('title')
       return
     }
@@ -1357,12 +1357,12 @@ function computeKpisForRange(
       copierDataRange.endMillis >= expectedDataEndMillis
 
     if (hasFullRange) {
-      rangeWarningElement.hidden = true
+      rangeWarningElement.classList.add('is-hidden')
       rangeWarningElement.removeAttribute('title')
       return
     }
 
-    rangeWarningElement.hidden = false
+    rangeWarningElement.classList.remove('is-hidden')
     rangeWarningElement.title =
       `Data available: ${formatTooltipDateTime(new Date(copierDataRange.startMillis))}` +
       ` to ${formatTooltipDateTime(new Date(copierDataRange.endMillis))}`
