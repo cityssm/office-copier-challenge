@@ -20,8 +20,8 @@ const COPIER_ICON_CLASSES = [
     'has-text-success'
 ];
 const COPIER_TIER_LABELS = [
-    'Over 1/3 of total prints',
-    '5% to 1/3 of total prints',
+    'Over 33% of total prints',
+    '5% to 33% of total prints',
     'Under 5% of total prints'
 ];
 function normalizeToHour(timeMillis) {
