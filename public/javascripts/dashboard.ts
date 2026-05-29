@@ -179,8 +179,7 @@ function calculateEstimatedPaperImpact(totalPrints: number): {
   estimatedTrees: number
 } {
   const estimatedPages = Math.round(
-    totalPrints *
-      ((1 - DOUBLE_SIDED_PRINT_SHARE) + DOUBLE_SIDED_PRINT_SHARE / 2)
+    totalPrints * (1 - DOUBLE_SIDED_PRINT_SHARE + DOUBLE_SIDED_PRINT_SHARE / 2)
   )
   const estimatedReams = estimatedPages / PAGES_PER_REAM
   const estimatedCartons = estimatedReams / REAMS_PER_CARTON
@@ -296,13 +295,34 @@ function computeKpisForRange(
         prints: number
       }
     | undefined
-  mostConsecutiveTopCopier: { copierNames: string[]; hours: number } | undefined
+  mostConsecutiveTopCopier:
+    | {
+        copierStats: Array<{
+          copierName: string
+          startTimeMillis: number
+          endTimeMillis: number
+        }>
+        hours: number
+      }
+    | undefined
   mostConsecutiveActiveHours:
-    | { copierNames: string[]; hours: number }
+    | {
+        copierStats: Array<{
+          copierName: string
+          startTimeMillis: number
+          endTimeMillis: number
+        }>
+        hours: number
+      }
     | undefined
   mostConsecutiveLowPrint:
     | {
-        copierStats: Array<{ copierName: string; prints: number }>
+        copierStats: Array<{
+          copierName: string
+          prints: number
+          startTimeMillis: number
+          endTimeMillis: number
+        }>
         hours: number
       }
     | undefined
@@ -470,11 +490,13 @@ function computeKpisForRange(
   }
 
   const longestTopRunByCopierName = new Map<string, number>()
+  const longestTopRunRangeByCopierName = new Map<string, [number, number]>()
 
   for (const { copier } of copierHourlyDeltas) {
     let currentRun = 0
     let previousWasTop = false
     let longestRun = 0
+    let currentRunStartMillis: number | undefined
 
     for (let index = 0; index < allHours.length; index += 1) {
       const timeMillis = allHours[index]
@@ -484,13 +506,26 @@ function computeKpisForRange(
         index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS
 
       if (isTopCopier) {
-        currentRun = isConsecutive && previousWasTop ? currentRun + 1 : 1
+        if (isConsecutive && previousWasTop) {
+          currentRun += 1
+        } else {
+          currentRun = 1
+          currentRunStartMillis = timeMillis
+        }
       } else {
         currentRun = 0
+        currentRunStartMillis = undefined
       }
 
       previousWasTop = isTopCopier
-      longestRun = Math.max(longestRun, currentRun)
+
+      if (currentRun > longestRun && currentRunStartMillis !== undefined) {
+        longestRun = currentRun
+        longestTopRunRangeByCopierName.set(copier.copierName, [
+          currentRunStartMillis,
+          timeMillis
+        ])
+      }
     }
 
     longestTopRunByCopierName.set(copier.copierName, longestRun)
@@ -506,13 +541,30 @@ function computeKpisForRange(
           true
         )
       : []
+  const longestTopCopierStats = longestTopCopierNames.flatMap((copierName) => {
+    const longestRunRange = longestTopRunRangeByCopierName.get(copierName)
+
+    if (longestRunRange === undefined) {
+      return []
+    }
+
+    return [
+      {
+        copierName,
+        startTimeMillis: longestRunRange[0],
+        endTimeMillis: longestRunRange[1]
+      }
+    ]
+  })
 
   // KPI 2b: Most consecutive hours with copies > 0
   const longestActiveRunByCopierName = new Map<string, number>()
+  const longestActiveRunRangeByCopierName = new Map<string, [number, number]>()
 
   for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
     let currentRun = 0
     let longestRun = 0
+    let currentRunStartMillis: number | undefined
 
     for (let index = 0; index < hourlyDeltas.length; index += 1) {
       const [timeMillis, prints] = hourlyDeltas[index]
@@ -520,12 +572,24 @@ function computeKpisForRange(
         index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
 
       if (prints > 0) {
-        currentRun = isConsecutive && currentRun > 0 ? currentRun + 1 : 1
+        if (isConsecutive && currentRun > 0) {
+          currentRun += 1
+        } else {
+          currentRun = 1
+          currentRunStartMillis = timeMillis
+        }
       } else {
         currentRun = 0
+        currentRunStartMillis = undefined
       }
 
-      longestRun = Math.max(longestRun, currentRun)
+      if (currentRun > longestRun && currentRunStartMillis !== undefined) {
+        longestRun = currentRun
+        longestActiveRunRangeByCopierName.set(copier.copierName, [
+          currentRunStartMillis,
+          timeMillis
+        ])
+      }
     }
 
     longestActiveRunByCopierName.set(copier.copierName, longestRun)
@@ -541,9 +605,27 @@ function computeKpisForRange(
           true
         )
       : []
+  const longestActiveCopierStats = longestActiveCopierNames.flatMap(
+    (copierName) => {
+      const longestRunRange = longestActiveRunRangeByCopierName.get(copierName)
+
+      if (longestRunRange === undefined) {
+        return []
+      }
+
+      return [
+        {
+          copierName,
+          startTimeMillis: longestRunRange[0],
+          endTimeMillis: longestRunRange[1]
+        }
+      ]
+    }
+  )
 
   // KPI 3: Most consecutive hours with fewer than 5 copies
   const longestLowRunByCopierName = new Map<string, number>()
+  const longestLowRunRangeByCopierName = new Map<string, [number, number]>()
   const longestLowRunPrintsByCopierName = new Map<string, number>()
   const lowPrintHoursByCopierName = new Map<string, number>()
 
@@ -552,6 +634,7 @@ function computeKpisForRange(
     let currentRunPrints = 0
     let longestRun = 0
     let longestRunPrints: number | undefined
+    let currentRunStartMillis: number | undefined
     let lowPrintHours = 0
 
     for (let index = 0; index < hourlyDeltas.length; index += 1) {
@@ -567,21 +650,33 @@ function computeKpisForRange(
         } else {
           currentRun = 1
           currentRunPrints = prints
+          currentRunStartMillis = timeMillis
         }
       } else {
         currentRun = 0
         currentRunPrints = 0
+        currentRunStartMillis = undefined
       }
 
-      if (currentRun > longestRun) {
+      if (currentRun > longestRun && currentRunStartMillis !== undefined) {
         longestRun = currentRun
         longestRunPrints = currentRunPrints
+        longestLowRunRangeByCopierName.set(copier.copierName, [
+          currentRunStartMillis,
+          timeMillis
+        ])
       } else if (
         currentRun === longestRun &&
         currentRun > 0 &&
-        (longestRunPrints === undefined || currentRunPrints < longestRunPrints)
+        (longestRunPrints === undefined ||
+          currentRunPrints < longestRunPrints) &&
+        currentRunStartMillis !== undefined
       ) {
         longestRunPrints = currentRunPrints
+        longestLowRunRangeByCopierName.set(copier.copierName, [
+          currentRunStartMillis,
+          timeMillis
+        ])
       }
     }
 
@@ -604,10 +699,22 @@ function computeKpisForRange(
         )
       : []
 
-  const longestLowCopierStats = longestLowCopierNames.map((copierName) => ({
-    copierName,
-    prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0
-  }))
+  const longestLowCopierStats = longestLowCopierNames.flatMap((copierName) => {
+    const longestRunRange = longestLowRunRangeByCopierName.get(copierName)
+
+    if (longestRunRange === undefined) {
+      return []
+    }
+
+    return [
+      {
+        copierName,
+        prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0,
+        startTimeMillis: longestRunRange[0],
+        endTimeMillis: longestRunRange[1]
+      }
+    ]
+  })
   const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0)
   const mostLowPrintHourCopierNames =
     mostLowPrintHours > 0
@@ -627,13 +734,13 @@ function computeKpisForRange(
     busiestCopierHour,
 
     mostConsecutiveTopCopier:
-      longestTopCopierNames.length > 0 && longestTopRun > 1
-        ? { copierNames: longestTopCopierNames, hours: longestTopRun }
+      longestTopCopierStats.length > 0 && longestTopRun > 1
+        ? { copierStats: longestTopCopierStats, hours: longestTopRun }
         : undefined,
 
     mostConsecutiveActiveHours:
-      longestActiveCopierNames.length > 0 && longestActiveRun > 1
-        ? { copierNames: longestActiveCopierNames, hours: longestActiveRun }
+      longestActiveCopierStats.length > 0 && longestActiveRun > 1
+        ? { copierStats: longestActiveCopierStats, hours: longestActiveRun }
         : undefined,
 
     mostConsecutiveLowPrint:
@@ -984,6 +1091,19 @@ function computeKpisForRange(
     const noDataContext = 'No data available'
     const formatCopierNames = (copierNames: string[]): string =>
       copierNames.join('\n')
+    const formatConsecutiveHoursCopierStats = (
+      copierStats: Array<{
+        copierName: string
+        startTimeMillis: number
+        endTimeMillis: number
+      }>
+    ): string =>
+      copierStats
+        .map(
+          (copierStat) =>
+            `${copierStat.copierName}\n${formatTooltipDateTime(new Date(copierStat.startTimeMillis))} to ${formatTooltipDateTime(new Date(copierStat.endTimeMillis))}`
+        )
+        .join('\n')
     const formatPrintCount = (prints: number): string =>
       `${prints.toLocaleString()} prints`
     const formatHourCount = (hours: number): string =>
@@ -1013,7 +1133,7 @@ function computeKpisForRange(
           kpis.busiestCopierHour.copierHours
             .map(
               (copierHour) =>
-                `${copierHour.copierName}, ${formatTooltipDateTime(new Date(copierHour.timeMillis))}`
+                `${copierHour.copierName}\n${formatTooltipDateTime(new Date(copierHour.timeMillis))}`
             )
             .join('\n')
         )
@@ -1026,7 +1146,9 @@ function computeKpisForRange(
       setKpi(
         'kpiTopCopierStreak',
         formatHourCount(kpis.mostConsecutiveTopCopier.hours),
-        formatCopierNames(kpis.mostConsecutiveTopCopier.copierNames)
+        formatConsecutiveHoursCopierStats(
+          kpis.mostConsecutiveTopCopier.copierStats
+        )
       )
     }
 
@@ -1036,7 +1158,9 @@ function computeKpisForRange(
       setKpi(
         'kpiActiveStreak',
         formatHourCount(kpis.mostConsecutiveActiveHours.hours),
-        formatCopierNames(kpis.mostConsecutiveActiveHours.copierNames)
+        formatConsecutiveHoursCopierStats(
+          kpis.mostConsecutiveActiveHours.copierStats
+        )
       )
     }
 
@@ -1046,10 +1170,8 @@ function computeKpisForRange(
       setKpi(
         'kpiLowPrintStreak',
         formatHourCount(kpis.mostConsecutiveLowPrint.hours),
-        formatCopierNames(
-          kpis.mostConsecutiveLowPrint.copierStats.map(
-            (copierStats) => copierStats.copierName
-          )
+        formatConsecutiveHoursCopierStats(
+          kpis.mostConsecutiveLowPrint.copierStats
         )
       )
     }
@@ -1071,12 +1193,18 @@ function computeKpisForRange(
     setKpi('kpiTotalPrints', formatPrintCount(totalPrints), durationLabel)
 
     const totalPrintsImpact = calculateEstimatedPaperImpact(totalPrints)
-    const estimatedPagesElement = document.querySelector('#kpiEstimatedPagesValue')
-    const estimatedReamsElement = document.querySelector('#kpiEstimatedReamsValue')
+    const estimatedPagesElement = document.querySelector(
+      '#kpiEstimatedPagesValue'
+    )
+    const estimatedReamsElement = document.querySelector(
+      '#kpiEstimatedReamsValue'
+    )
     const estimatedCartonsElement = document.querySelector(
       '#kpiEstimatedCartonsValue'
     )
-    const estimatedTreesElement = document.querySelector('#kpiEstimatedTreesValue')
+    const estimatedTreesElement = document.querySelector(
+      '#kpiEstimatedTreesValue'
+    )
 
     if (estimatedPagesElement instanceof HTMLElement) {
       estimatedPagesElement.textContent = formatEstimate(
@@ -1359,12 +1487,24 @@ function computeKpisForRange(
   )
 
   if (aboutModalElement instanceof HTMLDivElement) {
+    const aboutVideoElement = aboutModalElement.querySelector('video')
+
     const openAboutModal = (): void => {
+      if (aboutVideoElement instanceof HTMLVideoElement) {
+        aboutVideoElement.currentTime = 0
+        void aboutVideoElement.play()
+      }
+
       aboutModalElement.classList.add('is-active')
     }
 
     const closeAboutModal = (): void => {
       aboutModalElement.classList.remove('is-active')
+
+      if (aboutVideoElement instanceof HTMLVideoElement) {
+        aboutVideoElement.pause()
+        aboutVideoElement.currentTime = 0
+      }
     }
 
     document.querySelector('#aboutLink')?.addEventListener('click', (event) => {
