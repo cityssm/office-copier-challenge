@@ -13,6 +13,8 @@ const DOUBLE_SIDED_PRINT_SHARE = 0.5
 const PAGES_PER_REAM = 500
 const REAMS_PER_CARTON = 10
 const TREES_PER_CARTON = 0.6
+const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 1 / 3
+const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.05
 const COPIER_BAND_CLASSES = [
   'has-background-danger-light',
   'has-background-warning-light',
@@ -23,7 +25,11 @@ const COPIER_ICON_CLASSES = [
   'has-text-warning',
   'has-text-success'
 ]
-const COPIER_TIER_LABELS = ['High usage', 'Medium usage', 'Low usage']
+const COPIER_TIER_LABELS = [
+  'Over 1/3 of total prints',
+  '5% to 1/3 of total prints',
+  'Under 5% of total prints'
+]
 
 interface DashboardPoint {
   timeMillis: number
@@ -1369,31 +1375,32 @@ function computeKpisForRange(
   }
 
   const getCopierTierIndex = (
-    copierIndex: number,
-    copierCount: number
+    printCount: number,
+    totalPrintCount: number
   ): number => {
-    const baseBandSize = Math.floor(copierCount / 3)
-    const remainderCount = copierCount % 3
-    const topBandSize = baseBandSize + (remainderCount >= 1 ? 1 : 0)
-    const middleBandSize = baseBandSize + (remainderCount >= 2 ? 1 : 0)
-
-    if (copierIndex < topBandSize) {
-      return 0
-    }
-
-    if (copierIndex < topBandSize + middleBandSize) {
+    if (totalPrintCount <= 0) {
       return 1
     }
 
-    return 2
+    const printShare = printCount / totalPrintCount
+
+    if (printShare > HIGH_USAGE_PRINT_SHARE_THRESHOLD) {
+      return 0
+    }
+
+    if (printShare < LOW_USAGE_PRINT_SHARE_THRESHOLD) {
+      return 2
+    }
+
+    return 1
   }
 
   const updateCopierOptionTier = (
     copierOptionElement: HTMLDivElement,
-    copierIndex: number,
-    copierCount: number
+    printCount: number,
+    totalPrintCount: number
   ): void => {
-    const tierIndex = getCopierTierIndex(copierIndex, copierCount)
+    const tierIndex = getCopierTierIndex(printCount, totalPrintCount)
     const tierLabel = COPIER_TIER_LABELS[tierIndex]
     const labelElement = copierOptionElement.querySelector('label')
 
@@ -1440,6 +1447,10 @@ function computeKpisForRange(
 
       return copierA.copierName.localeCompare(copierB.copierName)
     })
+    const totalPrintCount = sortedCopierCounts.reduce(
+      (runningTotal, copierCount) => runningTotal + copierCount.printCount,
+      0
+    )
 
     const sortedCopierIds = sortedCopierCounts.map(
       (copierCount) => copierCount.copierId
@@ -1487,8 +1498,8 @@ function computeKpisForRange(
       copierSelectionElement.append(copierOptionElement)
       updateCopierOptionTier(
         copierOptionElement,
-        copierIndex,
-        sortedCopierCounts.length
+        sortedCopierCounts[copierIndex].printCount,
+        totalPrintCount
       )
     }
   }
