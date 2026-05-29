@@ -792,7 +792,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
         let startMillis = copier.hourlyCounts[0].timeMillis;
         let endMillis = startMillis;
-        for (const hourlyCount of copier.hourlyCounts) {
+        for (const hourlyCount of copier.hourlyCounts.slice(1)) {
             if (hourlyCount.timeMillis < startMillis) {
                 startMillis = hourlyCount.timeMillis;
             }
