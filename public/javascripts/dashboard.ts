@@ -1315,6 +1315,8 @@ function computeKpisForRange(
     }
   }
 
+  const getExpectedDataEndMillis = (): number => Date.now() - HOUR_MILLIS
+
   const updateCopierRangeWarning = (
     copierOptionElement: HTMLDivElement,
     copier: DashboardCopier,
@@ -1338,7 +1340,7 @@ function computeKpisForRange(
 
     const hasFullRange =
       copierDataRange.startMillis <= cutoffMillis &&
-      copierDataRange.endMillis >= Date.now() - HOUR_MILLIS
+      copierDataRange.endMillis >= getExpectedDataEndMillis()
 
     if (hasFullRange) {
       rangeWarningElement.hidden = true

@@ -795,6 +795,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             endMillis: copier.hourlyCounts[copier.hourlyCounts.length - 1].timeMillis
         };
     };
+    const getExpectedDataEndMillis = () => Date.now() - HOUR_MILLIS;
     const updateCopierRangeWarning = (copierOptionElement, copier, cutoffMillis) => {
         const rangeWarningElement = copierOptionElement.querySelector('.js-copier-range-warning');
         if (!(rangeWarningElement instanceof HTMLSpanElement)) {
@@ -807,7 +808,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             return;
         }
         const hasFullRange = copierDataRange.startMillis <= cutoffMillis &&
-            copierDataRange.endMillis >= Date.now() - HOUR_MILLIS;
+            copierDataRange.endMillis >= getExpectedDataEndMillis();
         if (hasFullRange) {
             rangeWarningElement.hidden = true;
             rangeWarningElement.removeAttribute('title');
