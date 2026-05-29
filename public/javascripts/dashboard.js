@@ -89,8 +89,7 @@ function formatFractionalEstimate(value) {
     });
 }
 function calculateEstimatedPaperImpact(totalPrints) {
-    const estimatedPages = Math.round(totalPrints *
-        ((1 - DOUBLE_SIDED_PRINT_SHARE) + DOUBLE_SIDED_PRINT_SHARE / 2));
+    const estimatedPages = Math.round(totalPrints * (1 - DOUBLE_SIDED_PRINT_SHARE + DOUBLE_SIDED_PRINT_SHARE / 2));
     const estimatedReams = estimatedPages / PAGES_PER_REAM;
     const estimatedCartons = estimatedReams / REAMS_PER_CARTON;
     const estimatedTrees = estimatedCartons * TREES_PER_CARTON;
@@ -303,11 +302,13 @@ function computeKpisForRange(copiers, cutoffMillis) {
         if (longestRunRange === undefined) {
             return [];
         }
-        return [{
-            copierName,
-            startTimeMillis: longestRunRange[0],
-            endTimeMillis: longestRunRange[1]
-        }];
+        return [
+            {
+                copierName,
+                startTimeMillis: longestRunRange[0],
+                endTimeMillis: longestRunRange[1]
+            }
+        ];
     });
     const longestActiveRunByCopierName = new Map();
     const longestActiveRunRangeByCopierName = new Map();
@@ -352,11 +353,13 @@ function computeKpisForRange(copiers, cutoffMillis) {
         if (longestRunRange === undefined) {
             return [];
         }
-        return [{
-            copierName,
-            startTimeMillis: longestRunRange[0],
-            endTimeMillis: longestRunRange[1]
-        }];
+        return [
+            {
+                copierName,
+                startTimeMillis: longestRunRange[0],
+                endTimeMillis: longestRunRange[1]
+            }
+        ];
     });
     const longestLowRunByCopierName = new Map();
     const longestLowRunRangeByCopierName = new Map();
@@ -389,8 +392,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 currentRunPrints = 0;
                 currentRunStartMillis = undefined;
             }
-            if (currentRun > longestRun &&
-                currentRunStartMillis !== undefined) {
+            if (currentRun > longestRun && currentRunStartMillis !== undefined) {
                 longestRun = currentRun;
                 longestRunPrints = currentRunPrints;
                 longestLowRunRangeByCopierName.set(copier.copierName, [
@@ -400,7 +402,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
             else if (currentRun === longestRun &&
                 currentRun > 0 &&
-                (longestRunPrints === undefined || currentRunPrints < longestRunPrints) &&
+                (longestRunPrints === undefined ||
+                    currentRunPrints < longestRunPrints) &&
                 currentRunStartMillis !== undefined) {
                 longestRunPrints = currentRunPrints;
                 longestLowRunRangeByCopierName.set(copier.copierName, [
@@ -424,12 +427,14 @@ function computeKpisForRange(copiers, cutoffMillis) {
         if (longestRunRange === undefined) {
             return [];
         }
-        return [{
-            copierName,
-            prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0,
-            startTimeMillis: longestRunRange[0],
-            endTimeMillis: longestRunRange[1]
-        }];
+        return [
+            {
+                copierName,
+                prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0,
+                startTimeMillis: longestRunRange[0],
+                endTimeMillis: longestRunRange[1]
+            }
+        ];
     });
     const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0);
     const mostLowPrintHourCopierNames = mostLowPrintHours > 0

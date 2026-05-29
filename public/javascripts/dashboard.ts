@@ -179,8 +179,7 @@ function calculateEstimatedPaperImpact(totalPrints: number): {
   estimatedTrees: number
 } {
   const estimatedPages = Math.round(
-    totalPrints *
-      ((1 - DOUBLE_SIDED_PRINT_SHARE) + DOUBLE_SIDED_PRINT_SHARE / 2)
+    totalPrints * (1 - DOUBLE_SIDED_PRINT_SHARE + DOUBLE_SIDED_PRINT_SHARE / 2)
   )
   const estimatedReams = estimatedPages / PAGES_PER_REAM
   const estimatedCartons = estimatedReams / REAMS_PER_CARTON
@@ -543,18 +542,20 @@ function computeKpisForRange(
         )
       : []
   const longestTopCopierStats = longestTopCopierNames.flatMap((copierName) => {
-      const longestRunRange = longestTopRunRangeByCopierName.get(copierName)
+    const longestRunRange = longestTopRunRangeByCopierName.get(copierName)
 
-      if (longestRunRange === undefined) {
-        return []
-      }
+    if (longestRunRange === undefined) {
+      return []
+    }
 
-      return [{
+    return [
+      {
         copierName,
         startTimeMillis: longestRunRange[0],
         endTimeMillis: longestRunRange[1]
-      }]
-    })
+      }
+    ]
+  })
 
   // KPI 2b: Most consecutive hours with copies > 0
   const longestActiveRunByCopierName = new Map<string, number>()
@@ -612,11 +613,13 @@ function computeKpisForRange(
         return []
       }
 
-      return [{
-        copierName,
-        startTimeMillis: longestRunRange[0],
-        endTimeMillis: longestRunRange[1]
-      }]
+      return [
+        {
+          copierName,
+          startTimeMillis: longestRunRange[0],
+          endTimeMillis: longestRunRange[1]
+        }
+      ]
     }
   )
 
@@ -655,10 +658,7 @@ function computeKpisForRange(
         currentRunStartMillis = undefined
       }
 
-      if (
-        currentRun > longestRun &&
-        currentRunStartMillis !== undefined
-      ) {
+      if (currentRun > longestRun && currentRunStartMillis !== undefined) {
         longestRun = currentRun
         longestRunPrints = currentRunPrints
         longestLowRunRangeByCopierName.set(copier.copierName, [
@@ -668,7 +668,8 @@ function computeKpisForRange(
       } else if (
         currentRun === longestRun &&
         currentRun > 0 &&
-        (longestRunPrints === undefined || currentRunPrints < longestRunPrints) &&
+        (longestRunPrints === undefined ||
+          currentRunPrints < longestRunPrints) &&
         currentRunStartMillis !== undefined
       ) {
         longestRunPrints = currentRunPrints
@@ -699,19 +700,21 @@ function computeKpisForRange(
       : []
 
   const longestLowCopierStats = longestLowCopierNames.flatMap((copierName) => {
-      const longestRunRange = longestLowRunRangeByCopierName.get(copierName)
+    const longestRunRange = longestLowRunRangeByCopierName.get(copierName)
 
-      if (longestRunRange === undefined) {
-        return []
-      }
+    if (longestRunRange === undefined) {
+      return []
+    }
 
-      return [{
+    return [
+      {
         copierName,
         prints: longestLowRunPrintsByCopierName.get(copierName) ?? 0,
         startTimeMillis: longestRunRange[0],
         endTimeMillis: longestRunRange[1]
-      }]
-    })
+      }
+    ]
+  })
   const mostLowPrintHours = Math.max(...lowPrintHoursByCopierName.values(), 0)
   const mostLowPrintHourCopierNames =
     mostLowPrintHours > 0
@@ -1190,12 +1193,18 @@ function computeKpisForRange(
     setKpi('kpiTotalPrints', formatPrintCount(totalPrints), durationLabel)
 
     const totalPrintsImpact = calculateEstimatedPaperImpact(totalPrints)
-    const estimatedPagesElement = document.querySelector('#kpiEstimatedPagesValue')
-    const estimatedReamsElement = document.querySelector('#kpiEstimatedReamsValue')
+    const estimatedPagesElement = document.querySelector(
+      '#kpiEstimatedPagesValue'
+    )
+    const estimatedReamsElement = document.querySelector(
+      '#kpiEstimatedReamsValue'
+    )
     const estimatedCartonsElement = document.querySelector(
       '#kpiEstimatedCartonsValue'
     )
-    const estimatedTreesElement = document.querySelector('#kpiEstimatedTreesValue')
+    const estimatedTreesElement = document.querySelector(
+      '#kpiEstimatedTreesValue'
+    )
 
     if (estimatedPagesElement instanceof HTMLElement) {
       estimatedPagesElement.textContent = formatEstimate(
