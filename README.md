@@ -31,6 +31,8 @@ More questions? See the [FAQ](#frequently-asked-questions-faqs) below.
 
 ## Frequently Asked Questions (FAQs)
 
+![Total KPIs](./docs/totalKpi.png)
+
 ### What is considered a print?
 
 A print is anything printed from the office copier,
