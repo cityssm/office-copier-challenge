@@ -12,6 +12,8 @@ const SUPPRESS_ABOUT_MODAL_STORAGE_KEY =
   'office-copier-challenge.suppressAboutModalOnce'
 const STACKED_TOOLBOX_ICON_PATH =
   'path://M64 96h384v64H64zM64 224h384v64H64zM64 352h384v64H64z'
+const CSV_TOOLBOX_ICON_PATH =
+  'path://M256 352L128 224h64V64h128v160h64zM64 416h384v64H64z'
 const LOW_PRINT_THRESHOLD = 5
 const DOUBLE_SIDED_PRINT_SHARE = 0.5
 const PAGES_PER_REAM = 500
@@ -893,13 +895,11 @@ function computeKpisForRange(
   const resetCopierSelectionElement = document.querySelector(
     '#resetCopierSelection'
   )
-  const exportCsvElement = document.querySelector('#exportCsv')
 
   if (
     !(selectAllCopiersElement instanceof HTMLButtonElement) ||
     !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
-    !(resetCopierSelectionElement instanceof HTMLButtonElement) ||
-    !(exportCsvElement instanceof HTMLButtonElement)
+    !(resetCopierSelectionElement instanceof HTMLButtonElement)
   ) {
     return
   }
@@ -1054,8 +1054,17 @@ function computeKpisForRange(
               isStackedChart = !isStackedChart
               updateChart()
             }
+          },
+          myExportCsv: {
+            show: true,
+            title: 'Export Data as CSV',
+            icon: CSV_TOOLBOX_ICON_PATH,
+            onclick: () => {
+              exportCsvData()
+            }
           }
-        }
+        },
+        itemGap: 20
       },
 
       dataZoom: [
@@ -1078,6 +1087,12 @@ function computeKpisForRange(
       yAxis: {
         type: 'value',
         name: useDailyCounts ? 'Daily Prints' : 'Hourly Prints'
+      },
+
+      grid: {
+        left: '1%',
+        right: '1%',
+        containLabel: true
       },
 
       series
@@ -1298,18 +1313,6 @@ function computeKpisForRange(
         formatHourCount(kpis.mostConsecutiveActiveHours.hours),
         formatConsecutiveHoursCopierStats(
           kpis.mostConsecutiveActiveHours.copierStats
-        )
-      )
-    }
-
-    if (kpis.mostConsecutiveLowPrint === undefined) {
-      setKpi('kpiLowPrintStreak', noDataValue, noDataContext)
-    } else {
-      setKpi(
-        'kpiLowPrintStreak',
-        formatHourCount(kpis.mostConsecutiveLowPrint.hours),
-        formatConsecutiveHoursCopierStats(
-          kpis.mostConsecutiveLowPrint.copierStats
         )
       )
     }
@@ -1722,9 +1725,7 @@ function computeKpisForRange(
     updateKpis()
   })
 
-  exportCsvElement.addEventListener('click', (clickEvent) => {
-    clickEvent.preventDefault()
-
+  const exportCsvData = (): void => {
     const { cutoffMillis } = getDurationRange()
     const selectedCopierIds = getSelectedCopierIds()
     const selectedCopiers = dashboardData.copiers.filter((copier) =>
@@ -1766,7 +1767,7 @@ function computeKpisForRange(
     downloadLinkElement.click()
     downloadLinkElement.remove()
     URL.revokeObjectURL(csvUrl)
-  })
+  }
 
   const aboutModalElement = document.querySelector('#aboutModal')
   const aboutModalCloseElements = document.querySelectorAll(
