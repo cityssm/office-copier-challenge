@@ -620,19 +620,23 @@ function computeKpisForRange(copiers, cutoffMillis) {
                     if (tooltipItems.length === 0) {
                         return '';
                     }
+                    const showOnlyNonZeroCopiersInTooltip = selectedCopiers.length > DEFAULT_SELECTED_COPIER_COUNT;
                     const printCountBySeries = tooltipItems.map((point) => ({
                         ...point,
                         printCount: point.value[1]
                     }));
+                    const visiblePrintCountBySeries = showOnlyNonZeroCopiersInTooltip
+                        ? printCountBySeries.filter((point) => point.printCount > 0)
+                        : printCountBySeries;
                     const totalPrintCount = printCountBySeries.reduce((total, point) => total + point.printCount, 0);
-                    const topSeriesPrintCount = printCountBySeries.reduce((topPrintCount, point) => Math.max(topPrintCount, point.printCount), Number.NEGATIVE_INFINITY);
+                    const topSeriesPrintCount = visiblePrintCountBySeries.reduce((topPrintCount, point) => Math.max(topPrintCount, point.printCount), 0);
                     const totalPrintLabel = totalPrintCount === 1 ? 'print' : 'prints';
                     const timeHeader = useDailyCounts
                         ? new Date(tooltipItems[0].axisValue).toLocaleDateString()
                         : formatTooltipDateTime(new Date(tooltipItems[0].axisValue));
                     return [
                         `${timeHeader} · Total: ${totalPrintCount.toLocaleString()} ${totalPrintLabel}`,
-                        ...printCountBySeries.map((point) => {
+                        ...visiblePrintCountBySeries.map((point) => {
                             const pointLine = `${point.marker} ${point.seriesName}: ${point.printCount.toLocaleString()}`;
                             return topSeriesPrintCount > 0 &&
                                 point.printCount === topSeriesPrintCount
