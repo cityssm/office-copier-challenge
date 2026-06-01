@@ -7,6 +7,12 @@ html {
   max-width: 100%;
 }
 
+.has-text-outlined-success {
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: var(--bulma-success-dark);
+
+}
+
 .kpi-card {
   border-radius: 0.75rem;
   min-height: 180px;

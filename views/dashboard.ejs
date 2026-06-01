@@ -17,8 +17,8 @@
   <body>
     <section class="section">
       <div class="container is-fluid">
+        <h1 class="is-size-1 has-text-weight-bold has-text-centered has-text-success has-text-outlined-success mb-4">Office Copier Challenge</h1>
         <div class="box mb-4">
-          <h1 class="is-size-5 has-text-weight-semibold mb-4">Office Copier Challenge</h1>
 
           <div class="level">
             <div class="level-left">
@@ -179,11 +179,20 @@
         <div class="box mb-4">
           <div id="copierUsageChart" style="height: 420px"></div>
           <p class="has-text-right">
-            <button id="exportCsv" class="button is-light is-small" type="button">Export Data as CSV</button>
+            <button id="exportCsv" class="button is-light is-small" type="button">
+              <span class="icon">
+                <i class="fa-solid fa-file-csv"></i>
+              </span>
+              <span>Export Data as CSV</span>
+            </button>
           </p>
         </div>
 
         <div class="mb-4" id="kpiSection">
+          <h2 class="is-size-2 has-text-weight-bold has-text-centered has-text-success has-text-outlined-success mb-5">
+            Statistics
+          </h2>
+   
           <div class="columns has-text-centered">
             <div class="column is-6-desktop">
               <article class="kpi-card kpi-card-info">
@@ -270,10 +279,19 @@
           </div>
         </div>
 
-        <div class="box has-text-centered mb-4">
-          <a href="#" id="aboutLink">About this Challenge</a>
-          <span class="mx-2">&middot;</span>
-          <a href="#" id="tipsLink">Tips to Reduce your Prints</a>
+        <div class="buttons is-centered">
+          <a class="button is-info is-light" href="#" id="aboutLink">
+            <span class="icon">
+              <i class="fa-solid fa-info-circle"></i>
+            </span>
+            <span>About this Challenge</span>
+          </a>
+          <a class="button is-success is-light" href="#" id="tipsLink">
+            <span class="icon">
+              <i class="fa-solid fa-lightbulb"></i>
+            </span>
+            <span>Tips to Reduce your Prints</span>
+          </a>
         </div>
       </div>
     </section>
