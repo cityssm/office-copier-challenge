@@ -899,7 +899,7 @@ function computeKpisForRange(
     !(selectAllCopiersElement instanceof HTMLButtonElement) ||
     !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
     !(resetCopierSelectionElement instanceof HTMLButtonElement) ||
-    !(exportCsvElement instanceof HTMLAnchorElement)
+    !(exportCsvElement instanceof HTMLButtonElement)
   ) {
     return
   }

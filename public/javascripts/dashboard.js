@@ -561,7 +561,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     if (!(selectAllCopiersElement instanceof HTMLButtonElement) ||
         !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
         !(resetCopierSelectionElement instanceof HTMLButtonElement) ||
-        !(exportCsvElement instanceof HTMLAnchorElement)) {
+        !(exportCsvElement instanceof HTMLButtonElement)) {
         return;
     }
     const dashboardData = JSON.parse(dashboardDataElement.text);
