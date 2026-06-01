@@ -219,7 +219,7 @@ function formatCsvTime(timeMillis: number): string {
   return `${hour}:00`
 }
 
-function escapeCsvValue(value: string | number): string {
+function escapeCsvValue(value: number | string): string {
   const valueAsString = String(value)
 
   return /[",\n\r]/.test(valueAsString)
