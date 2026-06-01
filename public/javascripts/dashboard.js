@@ -1005,11 +1005,14 @@ function computeKpisForRange(copiers, cutoffMillis) {
         reorderCopierOptionsForDuration(copierCounts);
     };
     const updateHiddenCopiersButton = (hiddenCopierCount = 0) => {
-        toggleHiddenCopiersElement.textContent = showHiddenCopiers
-            ? 'Hide hidden copiers'
-            : hiddenCopierCount > 0
-                ? `Show hidden copiers (${hiddenCopierCount.toLocaleString()})`
-                : 'Show hidden copiers';
+        let buttonText = 'Show hidden copiers';
+        if (showHiddenCopiers) {
+            buttonText = 'Hide hidden copiers';
+        }
+        else if (hiddenCopierCount > 0) {
+            buttonText = `Show hidden copiers (${hiddenCopierCount.toLocaleString()})`;
+        }
+        toggleHiddenCopiersElement.textContent = buttonText;
         toggleHiddenCopiersElement.setAttribute('aria-pressed', showHiddenCopiers ? 'true' : 'false');
     };
     const updateCopierVisibility = () => {
