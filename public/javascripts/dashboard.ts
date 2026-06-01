@@ -1327,31 +1327,6 @@ function computeKpisForRange(
     const actualDataStartMillis = getActualDataStartMillis(
       dashboardData.copiers
     )
-    const hasIncompleteData =
-      actualDataStartMillis !== undefined &&
-      actualDataStartMillis > cutoffMillis
-
-    const durationDataWarningItemElement = document.querySelector(
-      '#durationDataWarningItem'
-    )
-    const durationDataWarningTextElement = document.querySelector(
-      '#durationDataWarningText'
-    )
-
-    if (
-      durationDataWarningItemElement instanceof HTMLElement &&
-      durationDataWarningTextElement instanceof HTMLElement
-    ) {
-      if (
-        actualDataStartMillis !== undefined &&
-        actualDataStartMillis > cutoffMillis
-      ) {
-        durationDataWarningTextElement.textContent = `Data available from ${formatShortDate(actualDataStartMillis)}`
-        durationDataWarningItemElement.hidden = false
-      } else {
-        durationDataWarningItemElement.hidden = true
-      }
-    }
 
     const totalPrintsContext =
       actualDataStartMillis !== undefined &&
