@@ -899,7 +899,7 @@ function computeKpisForRange(
     !(selectAllCopiersElement instanceof HTMLButtonElement) ||
     !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
     !(resetCopierSelectionElement instanceof HTMLButtonElement) ||
-    !(exportCsvElement instanceof HTMLButtonElement)
+    !(exportCsvElement instanceof HTMLAnchorElement)
   ) {
     return
   }
@@ -1754,7 +1754,9 @@ function computeKpisForRange(
     updateKpis()
   })
 
-  exportCsvElement.addEventListener('click', () => {
+  exportCsvElement.addEventListener('click', (clickEvent) => {
+    clickEvent.preventDefault()
+
     const { cutoffMillis } = getDurationRange()
     const selectedCopierIds = getSelectedCopierIds()
     const selectedCopiers = dashboardData.copiers.filter((copier) =>

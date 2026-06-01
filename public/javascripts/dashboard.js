@@ -561,7 +561,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     if (!(selectAllCopiersElement instanceof HTMLButtonElement) ||
         !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
         !(resetCopierSelectionElement instanceof HTMLButtonElement) ||
-        !(exportCsvElement instanceof HTMLButtonElement)) {
+        !(exportCsvElement instanceof HTMLAnchorElement)) {
         return;
     }
     const dashboardData = JSON.parse(dashboardDataElement.text);
@@ -1027,9 +1027,10 @@ function computeKpisForRange(copiers, cutoffMillis) {
             const shouldShowMessage = !showHiddenCopiers && hiddenCopierCount > 0;
             hiddenCopiersMessageElement.hidden = !shouldShowMessage;
             if (shouldShowMessage) {
-                hiddenCopiersMessageTextElement.textContent = hiddenCopierCount === 1
-                    ? '1 copier is hidden. Use "Show hidden copiers" to view it.'
-                    : `${hiddenCopierCount.toLocaleString()} copiers are hidden. Use "Show hidden copiers" to view them.`;
+                hiddenCopiersMessageTextElement.textContent =
+                    hiddenCopierCount === 1
+                        ? '1 copier is hidden. Use "Show hidden copiers" to view it.'
+                        : `${hiddenCopierCount.toLocaleString()} copiers are hidden. Use "Show hidden copiers" to view them.`;
             }
         }
     };
@@ -1080,7 +1081,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
         updateCopierVisibility();
         updateKpis();
     });
-    exportCsvElement.addEventListener('click', () => {
+    exportCsvElement.addEventListener('click', (clickEvent) => {
+        clickEvent.preventDefault();
         const { cutoffMillis } = getDurationRange();
         const selectedCopierIds = getSelectedCopierIds();
         const selectedCopiers = dashboardData.copiers.filter((copier) => selectedCopierIds.has(copier.copierId));
