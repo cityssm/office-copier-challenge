@@ -1,12 +1,16 @@
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
-const DEFAULT_SELECTED_COPIER_COUNT = 9;
+const DEFAULT_SELECTED_COPIER_COUNT = 10;
 const SELECTED_COPIER_IDS_STORAGE_KEY = 'office-copier-challenge.selectedCopierIds';
+const SUPPRESS_ABOUT_MODAL_STORAGE_KEY = 'office-copier-challenge.suppressAboutModalOnce';
+const STACKED_TOOLBOX_ICON_PATH = 'path://M64 96h384v64H64zM64 224h384v64H64zM64 352h384v64H64z';
 const LOW_PRINT_THRESHOLD = 5;
 const DOUBLE_SIDED_PRINT_SHARE = 0.5;
 const PAGES_PER_REAM = 500;
 const REAMS_PER_CARTON = 10;
 const TREES_PER_CARTON = 0.6;
+const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.25;
+const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.05;
 const COPIER_BAND_CLASSES = [
     'has-background-danger-light',
     'has-background-warning-light',
@@ -17,7 +21,11 @@ const COPIER_ICON_CLASSES = [
     'has-text-warning',
     'has-text-success'
 ];
-const COPIER_TIER_LABELS = ['High usage', 'Medium usage', 'Low usage'];
+const COPIER_TIER_LABELS = [
+    'Over 25% of total prints',
+    '5% to 25% of total prints',
+    'Under 5% of total prints'
+];
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
 }
@@ -66,6 +74,53 @@ function buildDailyDeltaSeries(hourlyCounts) {
         dailyPrints.set(dayStartMillis, (dailyPrints.get(dayStartMillis) ?? 0) + prints);
     }
     return [...dailyPrints.entries()].toSorted(([dayA], [dayB]) => dayA - dayB);
+}
+function buildPaddedStackedSeries(series, cutoffMillis, nowMillis, useDailyCounts) {
+    if (series.length === 0) {
+        return series;
+    }
+    const slotMillis = useDailyCounts ? DAY_MILLIS : HOUR_MILLIS;
+    const normalizeTime = useDailyCounts ? normalizeToDay : normalizeToHour;
+    const rangeStartMillis = normalizeTime(cutoffMillis);
+    const rangeEndMillis = normalizeTime(nowMillis);
+    if (rangeEndMillis < rangeStartMillis) {
+        return series;
+    }
+    const timeSlots = [];
+    for (let timeMillis = rangeStartMillis; timeMillis <= rangeEndMillis; timeMillis += slotMillis) {
+        timeSlots.push(timeMillis);
+    }
+    return series.map((seriesItem) => {
+        const valueByTime = new Map();
+        for (const [timeMillis, printCount] of seriesItem.data) {
+            valueByTime.set(normalizeTime(timeMillis), printCount);
+        }
+        return {
+            ...seriesItem,
+            data: timeSlots.map((timeMillis) => [
+                timeMillis,
+                valueByTime.get(timeMillis) ?? 0
+            ])
+        };
+    });
+}
+function formatCsvDate(timeMillis) {
+    const date = new Date(timeMillis);
+    const year = date.getFullYear().toString().padStart(4, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+function formatCsvTime(timeMillis) {
+    const date = new Date(timeMillis);
+    const hour = date.getHours().toString().padStart(2, '0');
+    return `${hour}:00`;
+}
+function escapeCsvValue(value) {
+    const valueAsString = String(value);
+    return /[",\n\r]/.test(valueAsString)
+        ? `"${valueAsString.replaceAll('"', '""')}"`
+        : valueAsString;
 }
 function formatHourAmPm(date) {
     const hours = date.getHours();
@@ -499,16 +554,14 @@ function computeKpisForRange(copiers, cutoffMillis) {
     if (!(toggleHiddenCopiersElement instanceof HTMLButtonElement)) {
         return;
     }
-    const toggleStackedChartElement = document.querySelector('#toggleStackedChart');
-    if (!(toggleStackedChartElement instanceof HTMLButtonElement)) {
-        return;
-    }
     const selectAllCopiersElement = document.querySelector('#selectAllCopiers');
     const deselectAllCopiersElement = document.querySelector('#deselectAllCopiers');
     const resetCopierSelectionElement = document.querySelector('#resetCopierSelection');
+    const exportCsvElement = document.querySelector('#exportCsv');
     if (!(selectAllCopiersElement instanceof HTMLButtonElement) ||
         !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
-        !(resetCopierSelectionElement instanceof HTMLButtonElement)) {
+        !(resetCopierSelectionElement instanceof HTMLButtonElement) ||
+        !(exportCsvElement instanceof HTMLAnchorElement)) {
         return;
     }
     const dashboardData = JSON.parse(dashboardDataElement.text);
@@ -532,7 +585,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             .map((copierId) => copierDataById.get(copierId))
             .filter((copier) => copier !== undefined);
         chart.clear();
-        const series = selectedCopiers.map((copier) => ({
+        const baseSeries = selectedCopiers.map((copier) => ({
             name: copier.copierName,
             type: 'line',
             showSymbol: false,
@@ -541,6 +594,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 ? buildDailyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
                 : buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
         }));
+        const series = isStackedChart
+            ? buildPaddedStackedSeries(baseSeries, cutoffMillis, nowMillis, useDailyCounts)
+            : baseSeries;
         if (series.length > 0 && shadedTimeRanges.length > 0) {
             series[0] = {
                 ...series[0],
@@ -590,8 +646,33 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 type: 'scroll',
                 selectedMode: false
             },
+            toolbox: {
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: 'none'
+                    },
+                    myStackedChart: {
+                        show: true,
+                        title: isStackedChart
+                            ? 'Disable stacked chart'
+                            : 'Enable stacked chart',
+                        icon: STACKED_TOOLBOX_ICON_PATH,
+                        onclick: () => {
+                            isStackedChart = !isStackedChart;
+                            updateChart();
+                        }
+                    }
+                }
+            },
+            dataZoom: [
+                {
+                    type: 'inside'
+                }
+            ],
             xAxis: {
                 type: 'time',
+                min: cutoffMillis,
+                max: nowMillis,
                 axisLabel: useDailyCounts
                     ? {}
                     : {
@@ -745,21 +826,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
         const totalPrints = dashboardData.copiers.reduce((total, copier) => total + getPrintCountInRange(copier, cutoffMillis), 0);
         const actualDataStartMillis = getActualDataStartMillis(dashboardData.copiers);
-        const hasIncompleteData = actualDataStartMillis !== undefined &&
-            actualDataStartMillis > cutoffMillis;
-        const durationDataWarningItemElement = document.querySelector('#durationDataWarningItem');
-        const durationDataWarningTextElement = document.querySelector('#durationDataWarningText');
-        if (durationDataWarningItemElement instanceof HTMLElement &&
-            durationDataWarningTextElement instanceof HTMLElement) {
-            if (actualDataStartMillis !== undefined &&
-                actualDataStartMillis > cutoffMillis) {
-                durationDataWarningTextElement.textContent = `Data available from ${formatShortDate(actualDataStartMillis)}`;
-                durationDataWarningItemElement.hidden = false;
-            }
-            else {
-                durationDataWarningItemElement.hidden = true;
-            }
-        }
         const totalPrintsContext = actualDataStartMillis !== undefined &&
             actualDataStartMillis > cutoffMillis
             ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
@@ -786,21 +852,67 @@ function computeKpisForRange(copiers, cutoffMillis) {
     const getPrintCountInRange = (copier, cutoffMillis) => buildHourlyDeltaSeries(copier.hourlyCounts)
         .filter(([timeMillis]) => timeMillis >= cutoffMillis)
         .reduce((total, [, printCount]) => total + printCount, 0);
-    const getCopierTierIndex = (copierIndex, copierCount) => {
-        const baseBandSize = Math.floor(copierCount / 3);
-        const remainderCount = copierCount % 3;
-        const topBandSize = baseBandSize + (remainderCount >= 1 ? 1 : 0);
-        const middleBandSize = baseBandSize + (remainderCount >= 2 ? 1 : 0);
-        if (copierIndex < topBandSize) {
+    const getCopierDataRange = (copier) => {
+        if (copier.hourlyCounts.length === 0) {
+            return;
+        }
+        let startMillis = copier.hourlyCounts[0].timeMillis;
+        let endMillis = startMillis;
+        for (const hourlyCount of copier.hourlyCounts.slice(1)) {
+            if (hourlyCount.timeMillis < startMillis) {
+                startMillis = hourlyCount.timeMillis;
+            }
+            if (hourlyCount.timeMillis > endMillis) {
+                endMillis = hourlyCount.timeMillis;
+            }
+        }
+        return {
+            startMillis,
+            endMillis
+        };
+    };
+    const getExpectedDataEndMillis = () => normalizeToHour(Date.now() - HOUR_MILLIS);
+    const updateCopierRangeWarning = (copierOptionElement, copier, cutoffMillis, expectedDataEndMillis) => {
+        const rangeWarningElement = copierOptionElement.querySelector('.js-copier-range-warning');
+        if (!(rangeWarningElement instanceof HTMLSpanElement)) {
+            return;
+        }
+        const copierDataRange = getCopierDataRange(copier);
+        if (copierDataRange === undefined) {
+            rangeWarningElement.classList.add('is-hidden');
+            rangeWarningElement.hidden = true;
+            rangeWarningElement.removeAttribute('title');
+            return;
+        }
+        const hasFullRange = copierDataRange.startMillis <= cutoffMillis &&
+            copierDataRange.endMillis >= expectedDataEndMillis;
+        if (hasFullRange) {
+            rangeWarningElement.classList.add('is-hidden');
+            rangeWarningElement.hidden = true;
+            rangeWarningElement.removeAttribute('title');
+            return;
+        }
+        rangeWarningElement.classList.remove('is-hidden');
+        rangeWarningElement.hidden = false;
+        rangeWarningElement.title =
+            `Data available: ${formatTooltipDateTime(new Date(copierDataRange.startMillis))}` +
+                ` to ${formatTooltipDateTime(new Date(copierDataRange.endMillis))}`;
+    };
+    const getCopierTierIndex = (printCount, totalPrintCount) => {
+        if (totalPrintCount <= 0) {
+            return 2;
+        }
+        const printShare = Math.max(0, printCount) / totalPrintCount;
+        if (printShare > HIGH_USAGE_PRINT_SHARE_THRESHOLD) {
             return 0;
         }
-        if (copierIndex < topBandSize + middleBandSize) {
-            return 1;
+        if (printShare < LOW_USAGE_PRINT_SHARE_THRESHOLD) {
+            return 2;
         }
-        return 2;
+        return 1;
     };
-    const updateCopierOptionTier = (copierOptionElement, copierIndex, copierCount) => {
-        const tierIndex = getCopierTierIndex(copierIndex, copierCount);
+    const updateCopierOptionTier = (copierOptionElement, printCount, totalPrintCount) => {
+        const tierIndex = getCopierTierIndex(printCount, totalPrintCount);
         const tierLabel = COPIER_TIER_LABELS[tierIndex];
         const labelElement = copierOptionElement.querySelector('label');
         if (labelElement instanceof HTMLLabelElement) {
@@ -831,6 +943,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
             return copierA.copierName.localeCompare(copierB.copierName);
         });
+        const totalPrintCount = sortedCopierCounts.reduce((runningTotal, copierCount) => runningTotal + copierCount.printCount, 0);
         const sortedCopierIds = sortedCopierCounts.map((copierCount) => copierCount.copierId);
         const currentCopierIds = [
             ...copierSelectionElement.querySelectorAll('.js-copier-checkbox')
@@ -853,41 +966,54 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 continue;
             }
             copierSelectionElement.append(copierOptionElement);
-            updateCopierOptionTier(copierOptionElement, copierIndex, sortedCopierCounts.length);
+            updateCopierOptionTier(copierOptionElement, sortedCopierCounts[copierIndex].printCount, totalPrintCount);
         }
     };
     const updateCopierCountsForDuration = () => {
         const { cutoffMillis } = getDurationRange();
+        const expectedDataEndMillis = getExpectedDataEndMillis();
         const copierCounts = getPrintCountByCopier(cutoffMillis);
         for (const copierCount of copierCounts) {
             const checkboxElement = document.querySelector(`.js-copier-checkbox[value="${copierCount.copierId}"]`);
-            const countElement = checkboxElement
-                ?.closest('.js-copier-option')
-                ?.querySelector('.js-copier-count');
+            const copierOptionElement = checkboxElement?.closest('.js-copier-option');
+            const countElement = copierOptionElement?.querySelector('.js-copier-count');
             if (countElement instanceof HTMLSpanElement) {
                 countElement.textContent = copierCount.printCount.toLocaleString();
+            }
+            if (copierOptionElement instanceof HTMLDivElement) {
+                const copier = copierDataById.get(copierCount.copierId);
+                if (copier !== undefined) {
+                    updateCopierRangeWarning(copierOptionElement, copier, cutoffMillis, expectedDataEndMillis);
+                }
             }
         }
         reorderCopierOptionsForDuration(copierCounts);
     };
-    const updateHiddenCopiersButton = () => {
-        toggleHiddenCopiersElement.textContent = showHiddenCopiers
-            ? 'Hide hidden copiers'
-            : 'Show hidden copiers';
+    const updateHiddenCopiersButton = (hiddenCopierCount = 0) => {
+        let buttonText = 'Show hidden copiers';
+        if (showHiddenCopiers) {
+            buttonText = 'Hide hidden copiers';
+        }
+        else if (hiddenCopierCount > 0) {
+            buttonText = `Show hidden copiers (${hiddenCopierCount.toLocaleString()})`;
+        }
+        toggleHiddenCopiersElement.textContent = buttonText;
         toggleHiddenCopiersElement.setAttribute('aria-pressed', showHiddenCopiers ? 'true' : 'false');
     };
-    const updateStackedChartButton = () => {
-        toggleStackedChartElement.setAttribute('aria-pressed', isStackedChart ? 'true' : 'false');
-        toggleStackedChartElement.classList.toggle('is-link', isStackedChart);
-    };
     const updateCopierVisibility = () => {
+        let hiddenCopierCount = 0;
         for (const copierOptionElement of copierOptionElements) {
             const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox');
             const copierName = copierOptionElement.dataset.copierName ?? '';
             const matchesFilter = copierName.includes(copierNameFilterText);
             const isSelected = checkboxElement instanceof HTMLInputElement && checkboxElement.checked;
-            copierOptionElement.classList.toggle('is-hidden', !matchesFilter || (!showHiddenCopiers && !isSelected));
+            const isHiddenByToggle = !showHiddenCopiers && !isSelected;
+            if (isHiddenByToggle) {
+                hiddenCopierCount += 1;
+            }
+            copierOptionElement.classList.toggle('is-hidden', !matchesFilter || isHiddenByToggle);
         }
+        updateHiddenCopiersButton(hiddenCopierCount);
     };
     for (const checkboxElement of checkboxElements) {
         checkboxElement.addEventListener('change', () => {
@@ -912,13 +1038,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
     }
     toggleHiddenCopiersElement.addEventListener('click', () => {
         showHiddenCopiers = !showHiddenCopiers;
-        updateHiddenCopiersButton();
         updateCopierVisibility();
-    });
-    toggleStackedChartElement.addEventListener('click', () => {
-        isStackedChart = !isStackedChart;
-        updateStackedChartButton();
-        updateChart();
     });
     selectAllCopiersElement.addEventListener('click', () => {
         applySelectedCopierIds(new Set(dashboardData.copiers.map((copier) => copier.copierId)));
@@ -940,6 +1060,39 @@ function computeKpisForRange(copiers, cutoffMillis) {
         updateChart();
         updateCopierVisibility();
         updateKpis();
+    });
+    exportCsvElement.addEventListener('click', (clickEvent) => {
+        clickEvent.preventDefault();
+        const { cutoffMillis } = getDurationRange();
+        const selectedCopierIds = getSelectedCopierIds();
+        const selectedCopiers = dashboardData.copiers.filter((copier) => selectedCopierIds.has(copier.copierId));
+        const csvRows = ['copierName,date,time,count'];
+        const sortedCopiers = selectedCopiers.toSorted((copierA, copierB) => copierA.copierName.localeCompare(copierB.copierName));
+        for (const copier of sortedCopiers) {
+            const hourlyRows = buildHourlyDeltaSeries(copier.hourlyCounts)
+                .filter(([timeMillis]) => timeMillis >= cutoffMillis)
+                .toSorted(([timeA], [timeB]) => timeA - timeB);
+            for (const [timeMillis, count] of hourlyRows) {
+                csvRows.push([
+                    escapeCsvValue(copier.copierName),
+                    escapeCsvValue(formatCsvDate(timeMillis)),
+                    escapeCsvValue(formatCsvTime(timeMillis)),
+                    escapeCsvValue(count)
+                ].join(','));
+            }
+        }
+        const csvBlob = new Blob([csvRows.join('\n')], {
+            type: 'text/csv;charset=utf-8'
+        });
+        const csvUrl = URL.createObjectURL(csvBlob);
+        const downloadLinkElement = document.createElement('a');
+        downloadLinkElement.href = csvUrl;
+        downloadLinkElement.download = `copier-hourly-data-${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.csv`;
+        downloadLinkElement.style.display = 'none';
+        document.body.append(downloadLinkElement);
+        downloadLinkElement.click();
+        downloadLinkElement.remove();
+        URL.revokeObjectURL(csvUrl);
     });
     const aboutModalElement = document.querySelector('#aboutModal');
     const aboutModalCloseElements = document.querySelectorAll('.js-about-modal-close');
@@ -966,7 +1119,19 @@ function computeKpisForRange(copiers, cutoffMillis) {
         for (const closeElement of aboutModalCloseElements) {
             closeElement.addEventListener('click', closeAboutModal);
         }
-        openAboutModal();
+        let shouldOpenAboutModal = true;
+        try {
+            shouldOpenAboutModal =
+                globalThis.sessionStorage.getItem(SUPPRESS_ABOUT_MODAL_STORAGE_KEY) !==
+                    'true';
+            globalThis.sessionStorage.removeItem(SUPPRESS_ABOUT_MODAL_STORAGE_KEY);
+        }
+        catch {
+            shouldOpenAboutModal = true;
+        }
+        if (shouldOpenAboutModal) {
+            openAboutModal();
+        }
     }
     const tipsModalElement = document.querySelector('#tipsModal');
     const tipsModalCloseElements = document.querySelectorAll('.js-tips-modal-close');
@@ -988,8 +1153,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
     updateCopierCountsForDuration();
     const storedSelectedCopierIds = loadSelectedCopierIds();
     applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds());
-    updateHiddenCopiersButton();
-    updateStackedChartButton();
     updateChart();
     updateCopierVisibility();
     updateKpis();
@@ -1010,6 +1173,11 @@ function computeKpisForRange(copiers, cutoffMillis) {
         document
             .querySelector('#refreshToastRefresh')
             ?.addEventListener('click', () => {
+            try {
+                globalThis.sessionStorage.setItem(SUPPRESS_ABOUT_MODAL_STORAGE_KEY, 'true');
+            }
+            catch {
+            }
             location.reload();
         });
     }

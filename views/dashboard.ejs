@@ -47,14 +47,6 @@
                   </div>
                 </div>
               </div>
-              <div class="level-item" id="durationDataWarningItem" hidden>
-                <span class="is-size-7 has-text-warning-dark">
-                  <span class="icon is-small">
-                    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-                  </span>
-                  <span id="durationDataWarningText"></span>
-                </span>
-              </div>
             </div>
             <div class="level-right">
               <div class="level-item">
@@ -158,6 +150,13 @@
                   <span class="is-sr-only"><%= copierTierLabel %></span>
                   <span>
                     <span class="js-copier-name"><%= copier.copierName %></span>
+                    <span
+                      class="icon is-small ml-1 js-copier-range-warning is-hidden"
+                      hidden
+                    >
+                      <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                      <span class="is-sr-only">Limited data range</span>
+                    </span>
                     <small>
                       (<span class="js-copier-count"><%= copier.totalPrints.toLocaleString() %></span>
                       prints)
@@ -172,22 +171,12 @@
             <button id="selectAllCopiers" class="button is-light" type="button">Select all</button>
             <button id="deselectAllCopiers" class="button is-light" type="button">Deselect all</button>
             <button id="resetCopierSelection" class="button is-link is-light" type="button">
-              Reset to default
+              Select Top 10
             </button>
           </div>
         </div>
 
         <div class="box mb-4">
-          <div class="has-text-right mb-2">
-            <button
-              id="toggleStackedChart"
-              class="button is-small is-light"
-              type="button"
-              aria-pressed="false"
-            >
-              Stacked
-            </button>
-          </div>
           <div id="copierUsageChart" style="height: 420px"></div>
         </div>
 
@@ -282,6 +271,8 @@
           <a href="#" id="aboutLink">About this Challenge</a>
           <span class="mx-2">&middot;</span>
           <a href="#" id="tipsLink">Tips to Reduce your Prints</a>
+          <span class="mx-2">&middot;</span>
+          <a href="#" id="exportCsv">Export Data as CSV</a>
         </div>
       </div>
     </section>
