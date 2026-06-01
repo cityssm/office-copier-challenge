@@ -17,7 +17,7 @@ const DOUBLE_SIDED_PRINT_SHARE = 0.5
 const PAGES_PER_REAM = 500
 const REAMS_PER_CARTON = 10
 const TREES_PER_CARTON = 0.6
-const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 1 / 3
+const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.25
 const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.05
 const COPIER_BAND_CLASSES = [
   'has-background-danger-light',
@@ -30,8 +30,8 @@ const COPIER_ICON_CLASSES = [
   'has-text-success'
 ]
 const COPIER_TIER_LABELS = [
-  'Over 33% of total prints',
-  '5% to 33% of total prints',
+  'Over 25% of total prints',
+  '5% to 25% of total prints',
   'Under 5% of total prints'
 ]
 
@@ -1083,12 +1083,6 @@ function computeKpisForRange(
     '.js-copier-checkbox'
   )
   const copierSelectionElement = document.querySelector('#copierSelection')
-  const hiddenCopiersMessageElement = document.querySelector(
-    '#hiddenCopiersMessage'
-  )
-  const hiddenCopiersMessageTextElement = document.querySelector(
-    '#hiddenCopiersMessageText'
-  )
   const copierFilterElement = document.querySelector('#copierNameFilter')
   const copierOptionElements =
     document.querySelectorAll<HTMLDivElement>('.js-copier-option')
@@ -1464,6 +1458,7 @@ function computeKpisForRange(
 
     if (copierDataRange === undefined) {
       rangeWarningElement.classList.add('is-hidden')
+      rangeWarningElement.hidden = true
       rangeWarningElement.removeAttribute('title')
       return
     }
@@ -1474,11 +1469,13 @@ function computeKpisForRange(
 
     if (hasFullRange) {
       rangeWarningElement.classList.add('is-hidden')
+      rangeWarningElement.hidden = true
       rangeWarningElement.removeAttribute('title')
       return
     }
 
     rangeWarningElement.classList.remove('is-hidden')
+    rangeWarningElement.hidden = false
     rangeWarningElement.title =
       `Data available: ${formatTooltipDateTime(new Date(copierDataRange.startMillis))}` +
       ` to ${formatTooltipDateTime(new Date(copierDataRange.endMillis))}`
@@ -1648,10 +1645,16 @@ function computeKpisForRange(
     reorderCopierOptionsForDuration(copierCounts)
   }
 
-  const updateHiddenCopiersButton = (): void => {
-    toggleHiddenCopiersElement.textContent = showHiddenCopiers
-      ? 'Hide hidden copiers'
-      : 'Show hidden copiers'
+  const updateHiddenCopiersButton = (hiddenCopierCount = 0): void => {
+    let buttonText = 'Show hidden copiers'
+
+    if (showHiddenCopiers) {
+      buttonText = 'Hide hidden copiers'
+    } else if (hiddenCopierCount > 0) {
+      buttonText = `Show hidden copiers (${hiddenCopierCount.toLocaleString()})`
+    }
+
+    toggleHiddenCopiersElement.textContent = buttonText
     toggleHiddenCopiersElement.setAttribute(
       'aria-pressed',
       showHiddenCopiers ? 'true' : 'false'
@@ -1681,21 +1684,7 @@ function computeKpisForRange(
       )
     }
 
-    if (
-      hiddenCopiersMessageElement instanceof HTMLElement &&
-      hiddenCopiersMessageTextElement instanceof HTMLElement
-    ) {
-      const shouldShowMessage = !showHiddenCopiers && hiddenCopierCount > 0
-
-      hiddenCopiersMessageElement.hidden = !shouldShowMessage
-
-      if (shouldShowMessage) {
-        hiddenCopiersMessageTextElement.textContent =
-          hiddenCopierCount === 1
-            ? '1 copier is hidden. Use "Show hidden copiers" to view it.'
-            : `${hiddenCopierCount.toLocaleString()} copiers are hidden. Use "Show hidden copiers" to view them.`
-      }
-    }
+    updateHiddenCopiersButton(hiddenCopierCount)
   }
 
   for (const checkboxElement of checkboxElements) {
@@ -1724,7 +1713,6 @@ function computeKpisForRange(
 
   toggleHiddenCopiersElement.addEventListener('click', () => {
     showHiddenCopiers = !showHiddenCopiers
-    updateHiddenCopiersButton()
     updateCopierVisibility()
   })
 
@@ -1882,7 +1870,6 @@ function computeKpisForRange(
     storedSelectedCopierIds ?? getDefaultSelectedCopierIds()
   )
 
-  updateHiddenCopiersButton()
   updateChart()
   updateCopierVisibility()
   updateKpis()
