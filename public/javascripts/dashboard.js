@@ -9,7 +9,7 @@ const DOUBLE_SIDED_PRINT_SHARE = 0.5;
 const PAGES_PER_REAM = 500;
 const REAMS_PER_CARTON = 10;
 const TREES_PER_CARTON = 0.6;
-const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 1 / 3;
+const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.25;
 const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.05;
 const COPIER_BAND_CLASSES = [
     'has-background-danger-light',
@@ -22,8 +22,8 @@ const COPIER_ICON_CLASSES = [
     'has-text-success'
 ];
 const COPIER_TIER_LABELS = [
-    'Over 33% of total prints',
-    '5% to 33% of total prints',
+    'Over 25% of total prints',
+    '5% to 25% of total prints',
     'Under 5% of total prints'
 ];
 function normalizeToHour(timeMillis) {
@@ -688,8 +688,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
     };
     const checkboxElements = document.querySelectorAll('.js-copier-checkbox');
     const copierSelectionElement = document.querySelector('#copierSelection');
-    const hiddenCopiersMessageElement = document.querySelector('#hiddenCopiersMessage');
-    const hiddenCopiersMessageTextElement = document.querySelector('#hiddenCopiersMessageText');
     const copierFilterElement = document.querySelector('#copierNameFilter');
     const copierOptionElements = document.querySelectorAll('.js-copier-option');
     let showHiddenCopiers = false;
@@ -897,6 +895,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
         const copierDataRange = getCopierDataRange(copier);
         if (copierDataRange === undefined) {
             rangeWarningElement.classList.add('is-hidden');
+            rangeWarningElement.hidden = true;
             rangeWarningElement.removeAttribute('title');
             return;
         }
@@ -904,10 +903,12 @@ function computeKpisForRange(copiers, cutoffMillis) {
             copierDataRange.endMillis >= expectedDataEndMillis;
         if (hasFullRange) {
             rangeWarningElement.classList.add('is-hidden');
+            rangeWarningElement.hidden = true;
             rangeWarningElement.removeAttribute('title');
             return;
         }
         rangeWarningElement.classList.remove('is-hidden');
+        rangeWarningElement.hidden = false;
         rangeWarningElement.title =
             `Data available: ${formatTooltipDateTime(new Date(copierDataRange.startMillis))}` +
                 ` to ${formatTooltipDateTime(new Date(copierDataRange.endMillis))}`;
@@ -1003,10 +1004,12 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
         reorderCopierOptionsForDuration(copierCounts);
     };
-    const updateHiddenCopiersButton = () => {
+    const updateHiddenCopiersButton = (hiddenCopierCount = 0) => {
         toggleHiddenCopiersElement.textContent = showHiddenCopiers
             ? 'Hide hidden copiers'
-            : 'Show hidden copiers';
+            : hiddenCopierCount > 0
+                ? `Show hidden copiers (${hiddenCopierCount.toLocaleString()})`
+                : 'Show hidden copiers';
         toggleHiddenCopiersElement.setAttribute('aria-pressed', showHiddenCopiers ? 'true' : 'false');
     };
     const updateCopierVisibility = () => {
@@ -1022,16 +1025,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
             copierOptionElement.classList.toggle('is-hidden', !matchesFilter || isHiddenByToggle);
         }
-        if (hiddenCopiersMessageElement instanceof HTMLElement &&
-            hiddenCopiersMessageTextElement instanceof HTMLElement) {
-            const shouldShowMessage = !showHiddenCopiers && hiddenCopierCount > 0;
-            hiddenCopiersMessageElement.hidden = !shouldShowMessage;
-            if (shouldShowMessage) {
-                hiddenCopiersMessageTextElement.textContent = hiddenCopierCount === 1
-                    ? '1 copier is hidden. Use "Show hidden copiers" to view it.'
-                    : `${hiddenCopierCount.toLocaleString()} copiers are hidden. Use "Show hidden copiers" to view them.`;
-            }
-        }
+        updateHiddenCopiersButton(hiddenCopierCount);
     };
     for (const checkboxElement of checkboxElements) {
         checkboxElement.addEventListener('change', () => {
@@ -1056,7 +1050,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
     }
     toggleHiddenCopiersElement.addEventListener('click', () => {
         showHiddenCopiers = !showHiddenCopiers;
-        updateHiddenCopiersButton();
         updateCopierVisibility();
     });
     selectAllCopiersElement.addEventListener('click', () => {
@@ -1171,7 +1164,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
     updateCopierCountsForDuration();
     const storedSelectedCopierIds = loadSelectedCopierIds();
     applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds());
-    updateHiddenCopiersButton();
     updateChart();
     updateCopierVisibility();
     updateKpis();

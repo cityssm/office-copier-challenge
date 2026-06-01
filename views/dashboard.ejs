@@ -158,7 +158,10 @@
                   <span class="is-sr-only"><%= copierTierLabel %></span>
                   <span>
                     <span class="js-copier-name"><%= copier.copierName %></span>
-                    <span class="icon is-small ml-1 js-copier-range-warning is-hidden">
+                    <span
+                      class="icon is-small ml-1 js-copier-range-warning is-hidden"
+                      hidden
+                    >
                       <i class="fa-regular fa-clock" aria-hidden="true"></i>
                       <span class="is-sr-only">Limited data range</span>
                     </span>
@@ -170,14 +173,6 @@
                 </label>
               </div>
             <% } %>
-            <div id="hiddenCopiersMessage" class="column is-full pt-0 pb-0" hidden>
-              <p class="is-size-7 has-text-grey">
-                <span class="icon is-small">
-                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                </span>
-                <span id="hiddenCopiersMessageText"></span>
-              </p>
-            </div>
           </div>
 
           <div class="buttons are-small mt-2">
