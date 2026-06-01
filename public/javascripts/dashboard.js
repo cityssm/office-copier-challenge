@@ -1,7 +1,9 @@
 const HOUR_MILLIS = 60 * 60 * 1000;
 const DAY_MILLIS = 24 * HOUR_MILLIS;
-const DEFAULT_SELECTED_COPIER_COUNT = 9;
+const DEFAULT_SELECTED_COPIER_COUNT = 10;
 const SELECTED_COPIER_IDS_STORAGE_KEY = 'office-copier-challenge.selectedCopierIds';
+const SUPPRESS_ABOUT_MODAL_STORAGE_KEY = 'office-copier-challenge.suppressAboutModalOnce';
+const STACKED_TOOLBOX_ICON_PATH = 'path://M64 96h384v64H64zM64 224h384v64H64zM64 352h384v64H64z';
 const LOW_PRINT_THRESHOLD = 5;
 const DOUBLE_SIDED_PRINT_SHARE = 0.5;
 const PAGES_PER_REAM = 500;
@@ -505,10 +507,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
     if (!(toggleHiddenCopiersElement instanceof HTMLButtonElement)) {
         return;
     }
-    const toggleStackedChartElement = document.querySelector('#toggleStackedChart');
-    if (!(toggleStackedChartElement instanceof HTMLButtonElement)) {
-        return;
-    }
     const selectAllCopiersElement = document.querySelector('#selectAllCopiers');
     const deselectAllCopiersElement = document.querySelector('#deselectAllCopiers');
     const resetCopierSelectionElement = document.querySelector('#resetCopierSelection');
@@ -600,6 +598,17 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 feature: {
                     dataZoom: {
                         yAxisIndex: 'none'
+                    },
+                    myStackedChart: {
+                        show: true,
+                        title: isStackedChart
+                            ? 'Disable stacked chart'
+                            : 'Enable stacked chart',
+                        icon: STACKED_TOOLBOX_ICON_PATH,
+                        onclick: () => {
+                            isStackedChart = !isStackedChart;
+                            updateChart();
+                        }
                     }
                 }
             },
@@ -627,6 +636,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
     };
     const checkboxElements = document.querySelectorAll('.js-copier-checkbox');
     const copierSelectionElement = document.querySelector('#copierSelection');
+    const hiddenCopiersMessageElement = document.querySelector('#hiddenCopiersMessage');
+    const hiddenCopiersMessageTextElement = document.querySelector('#hiddenCopiersMessageText');
     const copierFilterElement = document.querySelector('#copierNameFilter');
     const copierOptionElements = document.querySelectorAll('.js-copier-option');
     let showHiddenCopiers = false;
@@ -946,17 +957,28 @@ function computeKpisForRange(copiers, cutoffMillis) {
             : 'Show hidden copiers';
         toggleHiddenCopiersElement.setAttribute('aria-pressed', showHiddenCopiers ? 'true' : 'false');
     };
-    const updateStackedChartButton = () => {
-        toggleStackedChartElement.setAttribute('aria-pressed', isStackedChart ? 'true' : 'false');
-        toggleStackedChartElement.classList.toggle('is-link', isStackedChart);
-    };
     const updateCopierVisibility = () => {
+        let hiddenCopierCount = 0;
         for (const copierOptionElement of copierOptionElements) {
             const checkboxElement = copierOptionElement.querySelector('.js-copier-checkbox');
             const copierName = copierOptionElement.dataset.copierName ?? '';
             const matchesFilter = copierName.includes(copierNameFilterText);
             const isSelected = checkboxElement instanceof HTMLInputElement && checkboxElement.checked;
-            copierOptionElement.classList.toggle('is-hidden', !matchesFilter || (!showHiddenCopiers && !isSelected));
+            const isHiddenByToggle = !showHiddenCopiers && !isSelected;
+            if (isHiddenByToggle) {
+                hiddenCopierCount += 1;
+            }
+            copierOptionElement.classList.toggle('is-hidden', !matchesFilter || isHiddenByToggle);
+        }
+        if (hiddenCopiersMessageElement instanceof HTMLElement &&
+            hiddenCopiersMessageTextElement instanceof HTMLElement) {
+            const shouldShowMessage = !showHiddenCopiers && hiddenCopierCount > 0;
+            hiddenCopiersMessageElement.hidden = !shouldShowMessage;
+            if (shouldShowMessage) {
+                hiddenCopiersMessageTextElement.textContent = hiddenCopierCount === 1
+                    ? '1 copier is hidden. Use "Show hidden copiers" to view it.'
+                    : `${hiddenCopierCount.toLocaleString()} copiers are hidden. Use "Show hidden copiers" to view them.`;
+            }
         }
     };
     for (const checkboxElement of checkboxElements) {
@@ -984,11 +1006,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
         showHiddenCopiers = !showHiddenCopiers;
         updateHiddenCopiersButton();
         updateCopierVisibility();
-    });
-    toggleStackedChartElement.addEventListener('click', () => {
-        isStackedChart = !isStackedChart;
-        updateStackedChartButton();
-        updateChart();
     });
     selectAllCopiersElement.addEventListener('click', () => {
         applySelectedCopierIds(new Set(dashboardData.copiers.map((copier) => copier.copierId)));
@@ -1036,7 +1053,19 @@ function computeKpisForRange(copiers, cutoffMillis) {
         for (const closeElement of aboutModalCloseElements) {
             closeElement.addEventListener('click', closeAboutModal);
         }
-        openAboutModal();
+        let shouldOpenAboutModal = true;
+        try {
+            shouldOpenAboutModal =
+                globalThis.sessionStorage.getItem(SUPPRESS_ABOUT_MODAL_STORAGE_KEY) !==
+                    'true';
+            globalThis.sessionStorage.removeItem(SUPPRESS_ABOUT_MODAL_STORAGE_KEY);
+        }
+        catch {
+            shouldOpenAboutModal = true;
+        }
+        if (shouldOpenAboutModal) {
+            openAboutModal();
+        }
     }
     const tipsModalElement = document.querySelector('#tipsModal');
     const tipsModalCloseElements = document.querySelectorAll('.js-tips-modal-close');
@@ -1059,7 +1088,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
     const storedSelectedCopierIds = loadSelectedCopierIds();
     applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds());
     updateHiddenCopiersButton();
-    updateStackedChartButton();
     updateChart();
     updateCopierVisibility();
     updateKpis();
@@ -1080,6 +1108,11 @@ function computeKpisForRange(copiers, cutoffMillis) {
         document
             .querySelector('#refreshToastRefresh')
             ?.addEventListener('click', () => {
+            try {
+                globalThis.sessionStorage.setItem(SUPPRESS_ABOUT_MODAL_STORAGE_KEY, 'true');
+            }
+            catch {
+            }
             location.reload();
         });
     }

@@ -170,28 +170,26 @@
                 </label>
               </div>
             <% } %>
+            <div id="hiddenCopiersMessage" class="column is-full pt-0 pb-0" hidden>
+              <p class="is-size-7 has-text-grey">
+                <span class="icon is-small">
+                  <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                </span>
+                <span id="hiddenCopiersMessageText"></span>
+              </p>
+            </div>
           </div>
 
           <div class="buttons are-small mt-2">
             <button id="selectAllCopiers" class="button is-light" type="button">Select all</button>
             <button id="deselectAllCopiers" class="button is-light" type="button">Deselect all</button>
             <button id="resetCopierSelection" class="button is-link is-light" type="button">
-              Select Top 9
+              Select Top 10
             </button>
           </div>
         </div>
 
         <div class="box mb-4">
-          <div class="has-text-right mb-2">
-            <button
-              id="toggleStackedChart"
-              class="button is-small is-light"
-              type="button"
-              aria-pressed="false"
-            >
-              Stacked
-            </button>
-          </div>
           <div id="copierUsageChart" style="height: 420px"></div>
         </div>
 

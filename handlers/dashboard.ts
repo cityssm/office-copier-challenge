@@ -5,7 +5,7 @@ import getCopierHourlyMaximums from '../database/getCopierHourlyMaximums.js'
 import getCopiers from '../database/getCopiers.js'
 import { getCanadianHolidayDayStartMillis, normalizeToHour } from '../helpers/date.helpers.js'
 
-const DEFAULT_COPIER_COUNT = 9
+const DEFAULT_COPIER_COUNT = 10
 const MAX_DAYS = 60
 
 const DURATION_PRESETS = [
@@ -154,8 +154,8 @@ export default function handler(_request: Request, response: Response): void {
     )
   }) as DashboardDurationOption[]
 
-  const defaultDurationDays = durationOptions.some((o) => o.days === 7)
-    ? 7
+  const defaultDurationDays = durationOptions.some((o) => o.days === 1)
+    ? 1
     : durationOptions.length > 0
       ? durationOptions[0].days
       : MAX_DAYS
