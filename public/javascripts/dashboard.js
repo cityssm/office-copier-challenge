@@ -75,6 +75,53 @@ function buildDailyDeltaSeries(hourlyCounts) {
     }
     return [...dailyPrints.entries()].toSorted(([dayA], [dayB]) => dayA - dayB);
 }
+function buildPaddedStackedSeries(series, cutoffMillis, nowMillis, useDailyCounts) {
+    if (series.length === 0) {
+        return series;
+    }
+    const slotMillis = useDailyCounts ? DAY_MILLIS : HOUR_MILLIS;
+    const normalizeTime = useDailyCounts ? normalizeToDay : normalizeToHour;
+    const rangeStartMillis = normalizeTime(cutoffMillis);
+    const rangeEndMillis = normalizeTime(nowMillis);
+    if (rangeEndMillis < rangeStartMillis) {
+        return series;
+    }
+    const timeSlots = [];
+    for (let timeMillis = rangeStartMillis; timeMillis <= rangeEndMillis; timeMillis += slotMillis) {
+        timeSlots.push(timeMillis);
+    }
+    return series.map((seriesItem) => {
+        const valueByTime = new Map();
+        for (const [timeMillis, printCount] of seriesItem.data) {
+            valueByTime.set(normalizeTime(timeMillis), printCount);
+        }
+        return {
+            ...seriesItem,
+            data: timeSlots.map((timeMillis) => [
+                timeMillis,
+                valueByTime.get(timeMillis) ?? 0
+            ])
+        };
+    });
+}
+function formatCsvDate(timeMillis) {
+    const date = new Date(timeMillis);
+    const year = date.getFullYear().toString().padStart(4, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+function formatCsvTime(timeMillis) {
+    const date = new Date(timeMillis);
+    const hour = date.getHours().toString().padStart(2, '0');
+    return `${hour}:00`;
+}
+function escapeCsvValue(value) {
+    const valueAsString = String(value);
+    return /[",\n\r]/.test(valueAsString)
+        ? `"${valueAsString.replaceAll('"', '""')}"`
+        : valueAsString;
+}
 function formatHourAmPm(date) {
     const hours = date.getHours();
     const ampm = hours < 12 ? 'am' : 'pm';
@@ -510,9 +557,11 @@ function computeKpisForRange(copiers, cutoffMillis) {
     const selectAllCopiersElement = document.querySelector('#selectAllCopiers');
     const deselectAllCopiersElement = document.querySelector('#deselectAllCopiers');
     const resetCopierSelectionElement = document.querySelector('#resetCopierSelection');
+    const exportCsvElement = document.querySelector('#exportCsv');
     if (!(selectAllCopiersElement instanceof HTMLButtonElement) ||
         !(deselectAllCopiersElement instanceof HTMLButtonElement) ||
-        !(resetCopierSelectionElement instanceof HTMLButtonElement)) {
+        !(resetCopierSelectionElement instanceof HTMLButtonElement) ||
+        !(exportCsvElement instanceof HTMLButtonElement)) {
         return;
     }
     const dashboardData = JSON.parse(dashboardDataElement.text);
@@ -536,7 +585,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             .map((copierId) => copierDataById.get(copierId))
             .filter((copier) => copier !== undefined);
         chart.clear();
-        const series = selectedCopiers.map((copier) => ({
+        const baseSeries = selectedCopiers.map((copier) => ({
             name: copier.copierName,
             type: 'line',
             showSymbol: false,
@@ -545,6 +594,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 ? buildDailyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
                 : buildHourlyDeltaSeries(copier.hourlyCounts).filter(([timeMillis]) => timeMillis >= cutoffMillis)
         }));
+        const series = isStackedChart
+            ? buildPaddedStackedSeries(baseSeries, cutoffMillis, nowMillis, useDailyCounts)
+            : baseSeries;
         if (series.length > 0 && shadedTimeRanges.length > 0) {
             series[0] = {
                 ...series[0],
@@ -1027,6 +1079,38 @@ function computeKpisForRange(copiers, cutoffMillis) {
         updateChart();
         updateCopierVisibility();
         updateKpis();
+    });
+    exportCsvElement.addEventListener('click', () => {
+        const { cutoffMillis } = getDurationRange();
+        const selectedCopierIds = getSelectedCopierIds();
+        const selectedCopiers = dashboardData.copiers.filter((copier) => selectedCopierIds.has(copier.copierId));
+        const csvRows = ['copierName,date,time,count'];
+        const sortedCopiers = selectedCopiers.toSorted((copierA, copierB) => copierA.copierName.localeCompare(copierB.copierName));
+        for (const copier of sortedCopiers) {
+            const hourlyRows = buildHourlyDeltaSeries(copier.hourlyCounts)
+                .filter(([timeMillis]) => timeMillis >= cutoffMillis)
+                .toSorted(([timeA], [timeB]) => timeA - timeB);
+            for (const [timeMillis, count] of hourlyRows) {
+                csvRows.push([
+                    escapeCsvValue(copier.copierName),
+                    escapeCsvValue(formatCsvDate(timeMillis)),
+                    escapeCsvValue(formatCsvTime(timeMillis)),
+                    escapeCsvValue(count)
+                ].join(','));
+            }
+        }
+        const csvBlob = new Blob([csvRows.join('\n')], {
+            type: 'text/csv;charset=utf-8'
+        });
+        const csvUrl = URL.createObjectURL(csvBlob);
+        const downloadLinkElement = document.createElement('a');
+        downloadLinkElement.href = csvUrl;
+        downloadLinkElement.download = `copier-hourly-data-${new Date().toISOString().slice(0, 19).replaceAll(':', '-')}.csv`;
+        downloadLinkElement.style.display = 'none';
+        document.body.append(downloadLinkElement);
+        downloadLinkElement.click();
+        downloadLinkElement.remove();
+        URL.revokeObjectURL(csvUrl);
     });
     const aboutModalElement = document.querySelector('#aboutModal');
     const aboutModalCloseElements = document.querySelectorAll('.js-about-modal-close');
