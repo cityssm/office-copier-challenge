@@ -10,6 +10,10 @@ const DURATION_PRESETS = [
         label: 'Past 24 Hours'
     },
     {
+        days: 3,
+        label: 'Past 3 Days'
+    },
+    {
         days: 7,
         label: 'Past 7 Days'
     },
@@ -97,8 +101,8 @@ export default function handler(_request, response) {
         return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis >=
             nowMillis - durationPreset.days * millisecondsInOneDay);
     });
-    const defaultDurationDays = durationOptions.some((o) => o.days === 1)
-        ? 1
+    const defaultDurationDays = durationOptions.some((o) => o.days === 3)
+        ? 3
         : durationOptions.length > 0
             ? durationOptions[0].days
             : MAX_DAYS;
