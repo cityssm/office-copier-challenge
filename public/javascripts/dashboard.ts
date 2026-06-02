@@ -19,7 +19,7 @@ const DOUBLE_SIDED_PRINT_SHARE = 0.5
 const PAGES_PER_REAM = 500
 const REAMS_PER_CARTON = 10
 const TREES_PER_CARTON = 0.6
-const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.25
+const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.2
 const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.05
 const COPIER_BAND_CLASSES = [
   'has-background-danger-light',
@@ -32,8 +32,8 @@ const COPIER_ICON_CLASSES = [
   'has-text-success'
 ]
 const COPIER_TIER_LABELS = [
-  'Over 25% of total prints',
-  '5% to 25% of total prints',
+  'Over 20% of total prints',
+  '5% to 20% of total prints',
   'Under 5% of total prints'
 ]
 
@@ -1335,12 +1335,33 @@ function computeKpisForRange(
     const actualDataStartMillis = getActualDataStartMillis(
       dashboardData.copiers
     )
+    const expectedDataEndMillis = getExpectedDataEndMillis()
+    const copiersWithIncompleteRangeCount = dashboardData.copiers.filter(
+      (copier) => {
+        const copierDataRange = getCopierDataRange(copier)
 
-    const totalPrintsContext =
-      actualDataStartMillis !== undefined &&
-      actualDataStartMillis > cutoffMillis
-        ? `${durationLabel}\nData available from ${formatShortDate(actualDataStartMillis)}`
-        : durationLabel
+        return (
+          copierDataRange === undefined ||
+          copierDataRange.startMillis > cutoffMillis ||
+          copierDataRange.endMillis < expectedDataEndMillis
+        )
+      }
+    ).length
+    const totalPrintsContextLines = [durationLabel]
+
+    if (copiersWithIncompleteRangeCount > 0) {
+      totalPrintsContextLines.push(
+        `${copiersWithIncompleteRangeCount.toLocaleString()} copier${copiersWithIncompleteRangeCount === 1 ? '' : 's'} do not have a full data set for this range`
+      )
+    }
+
+    if (actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis) {
+      totalPrintsContextLines.push(
+        `Data available from ${formatShortDate(actualDataStartMillis)}`
+      )
+    }
+
+    const totalPrintsContext = totalPrintsContextLines.join('\n')
 
     setKpi('kpiTotalPrints', formatPrintCount(totalPrints), totalPrintsContext)
 
