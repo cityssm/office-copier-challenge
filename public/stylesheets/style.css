@@ -8,8 +8,15 @@ html {
 }
 
 .has-text-outlined-success {
-  -webkit-text-stroke-width: 1px;
-  -webkit-text-stroke-color: var(--bulma-success-dark);
+  text-shadow:
+    -1px -1px 0 var(--bulma-success-dark),
+    0 -1px 0 var(--bulma-success-dark),
+    1px -1px 0 var(--bulma-success-dark),
+    -1px 0 0 var(--bulma-success-dark),
+    1px 0 0 var(--bulma-success-dark),
+    -1px 1px 0 var(--bulma-success-dark),
+    0 1px 0 var(--bulma-success-dark),
+    1px 1px 0 var(--bulma-success-dark);
 
 }
 
