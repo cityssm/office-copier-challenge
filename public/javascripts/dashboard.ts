@@ -1780,7 +1780,7 @@ function computeKpisForRange(
     const openAboutModal = (): void => {
       if (aboutVideoElement instanceof HTMLVideoElement) {
         aboutVideoElement.currentTime = 0
-        void aboutVideoElement.play()
+        // void aboutVideoElement.play()
       }
 
       aboutModalElement.classList.add('is-active')

@@ -1111,7 +1111,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
         const openAboutModal = () => {
             if (aboutVideoElement instanceof HTMLVideoElement) {
                 aboutVideoElement.currentTime = 0;
-                void aboutVideoElement.play();
             }
             aboutModalElement.classList.add('is-active');
         };
