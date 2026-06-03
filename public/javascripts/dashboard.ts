@@ -1294,9 +1294,11 @@ function computeKpisForRange(
           const escapedValue = runnerUp.value
             .replaceAll('&', '&amp;')
             .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
           const escapedContext = runnerUp.context
             .replaceAll('&', '&amp;')
             .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
           return `<div class="kpi-runner-up-item"><span class="kpi-runner-up-label">${places[index]}</span><br /><span class="kpi-runner-up-value">${escapedValue}</span><br /><span class="kpi-runner-up-context">${escapedContext}</span></div>`
         })
         .join('')

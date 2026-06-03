@@ -808,8 +808,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
             container.innerHTML = runnerUps
                 .slice(0, 2)
                 .map((runnerUp, index) => {
-                    const escapedValue = runnerUp.value.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
-                    const escapedContext = runnerUp.context.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
+                    const escapedValue = runnerUp.value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+                    const escapedContext = runnerUp.context.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
                     return `<div class="kpi-runner-up-item"><span class="kpi-runner-up-label">${places[index]}</span><br /><span class="kpi-runner-up-value">${escapedValue}</span><br /><span class="kpi-runner-up-context">${escapedContext}</span></div>`;
                 })
                 .join('');
