@@ -633,7 +633,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
                     const timeHeader = useDailyCounts
                         ? new Date(tooltipItems[0].axisValue).toLocaleDateString()
                         : formatTooltipDateTime(new Date(tooltipItems[0].axisValue));
-                    return [
+                    return `
+            <div style="font-size: 0.8em">
+              ${[
                         `${timeHeader} · Total: ${totalPrintCount.toLocaleString()} ${totalPrintLabel}`,
                         ...visiblePrintCountBySeries.map((point) => {
                             const pointLine = `${point.marker} ${point.seriesName}: ${point.printCount.toLocaleString()}`;
@@ -642,7 +644,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
                                 ? `<strong>${pointLine}</strong>`
                                 : pointLine;
                         })
-                    ].join('<br/>');
+                    ].join('<br/>')}
+            </div>
+          `;
                 }
             },
             legend: {
@@ -848,7 +852,8 @@ function computeKpisForRange(copiers, cutoffMillis) {
         if (copiersWithIncompleteRangeCount > 0) {
             totalPrintsContextLines.push(`${copiersWithIncompleteRangeCount.toLocaleString()} copier${copiersWithIncompleteRangeCount === 1 ? '' : 's'} do not have a full data set for this range`);
         }
-        if (actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis) {
+        if (actualDataStartMillis !== undefined &&
+            actualDataStartMillis > cutoffMillis) {
             totalPrintsContextLines.push(`Data available from ${formatShortDate(actualDataStartMillis)}`);
         }
         const totalPrintsContext = totalPrintsContextLines.join('\n');

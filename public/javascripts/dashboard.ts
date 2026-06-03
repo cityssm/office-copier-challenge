@@ -943,19 +943,21 @@ function computeKpisForRange(
 
     chart.clear()
 
-    const baseSeries: DashboardChartSeries[] = selectedCopiers.map((copier) => ({
-      name: copier.copierName,
-      type: 'line',
-      showSymbol: false,
-      ...(isStackedChart ? { stack: 'total', areaStyle: {} } : {}),
-      data: useDailyCounts
-        ? buildDailyDeltaSeries(copier.hourlyCounts).filter(
-            ([timeMillis]) => timeMillis >= cutoffMillis
-          )
-        : buildHourlyDeltaSeries(copier.hourlyCounts).filter(
-            ([timeMillis]) => timeMillis >= cutoffMillis
-          )
-    }))
+    const baseSeries: DashboardChartSeries[] = selectedCopiers.map(
+      (copier) => ({
+        name: copier.copierName,
+        type: 'line',
+        showSymbol: false,
+        ...(isStackedChart ? { stack: 'total', areaStyle: {} } : {}),
+        data: useDailyCounts
+          ? buildDailyDeltaSeries(copier.hourlyCounts).filter(
+              ([timeMillis]) => timeMillis >= cutoffMillis
+            )
+          : buildHourlyDeltaSeries(copier.hourlyCounts).filter(
+              ([timeMillis]) => timeMillis >= cutoffMillis
+            )
+      })
+    )
     const series = isStackedChart
       ? buildPaddedStackedSeries(
           baseSeries,
@@ -1020,17 +1022,21 @@ function computeKpisForRange(
             ? new Date(tooltipItems[0].axisValue).toLocaleDateString()
             : formatTooltipDateTime(new Date(tooltipItems[0].axisValue))
 
-          return [
-            `${timeHeader} · Total: ${totalPrintCount.toLocaleString()} ${totalPrintLabel}`,
-            ...visiblePrintCountBySeries.map((point) => {
-              const pointLine = `${point.marker} ${point.seriesName}: ${point.printCount.toLocaleString()}`
+          return /* html */ `
+            <div style="font-size: 0.8em">
+              ${[
+                `${timeHeader} · Total: ${totalPrintCount.toLocaleString()} ${totalPrintLabel}`,
+                ...visiblePrintCountBySeries.map((point) => {
+                  const pointLine = `${point.marker} ${point.seriesName}: ${point.printCount.toLocaleString()}`
 
-              return topSeriesPrintCount > 0 &&
-                point.printCount === topSeriesPrintCount
-                ? `<strong>${pointLine}</strong>`
-                : pointLine
-            })
-          ].join('<br/>')
+                  return topSeriesPrintCount > 0 &&
+                    point.printCount === topSeriesPrintCount
+                    ? `<strong>${pointLine}</strong>`
+                    : pointLine
+                })
+              ].join('<br/>')}
+            </div>
+          `
         }
       },
 
@@ -1044,6 +1050,7 @@ function computeKpisForRange(
           dataZoom: {
             yAxisIndex: 'none'
           },
+
           myStackedChart: {
             show: true,
             title: isStackedChart
@@ -1055,6 +1062,7 @@ function computeKpisForRange(
               updateChart()
             }
           },
+
           myExportCsv: {
             show: true,
             title: 'Export Data as CSV',
@@ -1355,7 +1363,10 @@ function computeKpisForRange(
       )
     }
 
-    if (actualDataStartMillis !== undefined && actualDataStartMillis > cutoffMillis) {
+    if (
+      actualDataStartMillis !== undefined &&
+      actualDataStartMillis > cutoffMillis
+    ) {
       totalPrintsContextLines.push(
         `Data available from ${formatShortDate(actualDataStartMillis)}`
       )
@@ -1414,10 +1425,12 @@ function computeKpisForRange(
 
   const getCopierDataRange = (
     copier: DashboardCopier
-  ): {
-    startMillis: number
-    endMillis: number
-  } | undefined => {
+  ):
+    | {
+        startMillis: number
+        endMillis: number
+      }
+    | undefined => {
     if (copier.hourlyCounts.length === 0) {
       return
     }
