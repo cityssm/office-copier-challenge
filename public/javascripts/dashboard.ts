@@ -6,14 +6,17 @@ const HOUR_MILLIS = 60 * 60 * 1000
 const DAY_MILLIS = 24 * HOUR_MILLIS
 
 const DEFAULT_SELECTED_COPIER_COUNT = 10
+
 const SELECTED_COPIER_IDS_STORAGE_KEY =
   'office-copier-challenge.selectedCopierIds'
 const SUPPRESS_ABOUT_MODAL_STORAGE_KEY =
   'office-copier-challenge.suppressAboutModalOnce'
+
 const STACKED_TOOLBOX_ICON_PATH =
   'path://M64 96h384v64H64zM64 224h384v64H64zM64 352h384v64H64z'
 const CSV_TOOLBOX_ICON_PATH =
   'path://M256 352L128 224h64V64h128v160h64zM64 416h384v64H64z'
+
 const LOW_PRINT_THRESHOLD = 5
 const DOUBLE_SIDED_PRINT_SHARE = 0.5
 const PAGES_PER_REAM = 500
@@ -21,16 +24,19 @@ const REAMS_PER_CARTON = 10
 const TREES_PER_CARTON = 0.6
 const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.2
 const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.05
+
 const COPIER_BAND_CLASSES = [
   'has-background-danger-light',
   'has-background-warning-light',
   'has-background-success-light'
 ]
+
 const COPIER_ICON_CLASSES = [
   'has-text-danger',
   'has-text-warning',
   'has-text-success'
 ]
+
 const COPIER_TIER_LABELS = [
   'Over 20% of total prints',
   '5% to 20% of total prints',
@@ -1606,13 +1612,9 @@ function computeKpisForRange(
       }
     }
 
-    for (
-      let copierIndex = 0;
-      copierIndex < sortedCopierCounts.length;
-      copierIndex += 1
-    ) {
+    for (const sortedCopierCount of sortedCopierCounts) {
       const copierOptionElement = copierOptionById.get(
-        sortedCopierCounts[copierIndex].copierId
+        sortedCopierCount.copierId
       )
 
       if (copierOptionElement === undefined) {
@@ -1620,9 +1622,10 @@ function computeKpisForRange(
       }
 
       copierSelectionElement.append(copierOptionElement)
+
       updateCopierOptionTier(
         copierOptionElement,
-        sortedCopierCounts[copierIndex].printCount,
+        sortedCopierCount.printCount,
         totalPrintCount
       )
     }

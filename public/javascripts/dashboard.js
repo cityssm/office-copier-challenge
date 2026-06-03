@@ -987,13 +987,13 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 copierOptionById.set(Number(checkboxElement.value), copierOptionElement);
             }
         }
-        for (let copierIndex = 0; copierIndex < sortedCopierCounts.length; copierIndex += 1) {
-            const copierOptionElement = copierOptionById.get(sortedCopierCounts[copierIndex].copierId);
+        for (const sortedCopierCount of sortedCopierCounts) {
+            const copierOptionElement = copierOptionById.get(sortedCopierCount.copierId);
             if (copierOptionElement === undefined) {
                 continue;
             }
             copierSelectionElement.append(copierOptionElement);
-            updateCopierOptionTier(copierOptionElement, sortedCopierCounts[copierIndex].printCount, totalPrintCount);
+            updateCopierOptionTier(copierOptionElement, sortedCopierCount.printCount, totalPrintCount);
         }
     };
     const updateCopierCountsForDuration = () => {
