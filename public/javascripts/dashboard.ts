@@ -1165,6 +1165,10 @@ function computeKpisForRange(
     })
   }
 
+  chart.on('datazoom', () => {
+    chart.dispatchAction({ type: 'hideTip' })
+  })
+
   const checkboxElements = document.querySelectorAll<HTMLInputElement>(
     '.js-copier-checkbox'
   )
