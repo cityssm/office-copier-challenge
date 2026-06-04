@@ -698,8 +698,9 @@ function computeKpisForRange(
       }
     }
 
-    if (allHours.length > 0) {
-      pushCurrentRun(allHours[allHours.length - 1])
+    const lastHour = allHours.at(-1)
+    if (lastHour !== undefined) {
+      pushCurrentRun(lastHour)
     }
   }
 
@@ -786,8 +787,9 @@ function computeKpisForRange(
       }
     }
 
-    if (hourlyDeltas.length > 0) {
-      pushCurrentRun(hourlyDeltas[hourlyDeltas.length - 1][0])
+    const lastHourlyDelta = hourlyDeltas.at(-1)
+    if (lastHourlyDelta !== undefined) {
+      pushCurrentRun(lastHourlyDelta[0])
     }
   }
 
