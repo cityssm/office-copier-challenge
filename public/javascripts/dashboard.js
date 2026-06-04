@@ -302,11 +302,17 @@ function computeKpisForRange(copiers, cutoffMillis) {
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
         for (const [timeMillis, prints] of hourlyDeltas) {
             if (prints > 0) {
-                allCopierHourPrints.push({ copierName: copier.copierName, timeMillis, prints });
+                allCopierHourPrints.push({
+                    copierName: copier.copierName,
+                    timeMillis,
+                    prints
+                });
             }
         }
     }
-    const distinctCopierHourPrintCounts = [...new Set(allCopierHourPrints.map((c) => c.prints))]
+    const distinctCopierHourPrintCounts = [
+        ...new Set(allCopierHourPrints.map((c) => c.prints))
+    ]
         .toSorted((a, b) => b - a)
         .slice(0, 3);
     const topBusiestCopierHours = distinctCopierHourPrintCounts.map((printCount) => buildCopierHourResult(printCount, allCopierHourPrints.filter((c) => c.prints === printCount)));
@@ -380,7 +386,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
         });
         return { hours: runLength, copierStats: stats };
     };
-    const distinctTopRuns = [...new Set([...longestTopRunByCopierName.values()].filter((r) => r > 1))]
+    const distinctTopRuns = [
+        ...new Set([...longestTopRunByCopierName.values()].filter((r) => r > 1))
+    ]
         .toSorted((a, b) => b - a)
         .slice(0, 3);
     const topConsecutiveTopCopierResults = distinctTopRuns.map(buildConsecutiveTopCopierResult);
@@ -430,7 +438,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
         });
         return { hours: runLength, copierStats: stats };
     };
-    const distinctActiveRuns = [...new Set([...longestActiveRunByCopierName.values()].filter((r) => r > 1))]
+    const distinctActiveRuns = [
+        ...new Set([...longestActiveRunByCopierName.values()].filter((r) => r > 1))
+    ]
         .toSorted((a, b) => b - a)
         .slice(0, 3);
     const topConsecutiveActiveHoursResults = distinctActiveRuns.map(buildConsecutiveActiveHoursResult);
@@ -808,10 +818,16 @@ function computeKpisForRange(copiers, cutoffMillis) {
             container.innerHTML = runnerUps
                 .slice(0, 2)
                 .map((runnerUp, index) => {
-                    const escapedValue = runnerUp.value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-                    const escapedContext = runnerUp.context.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-                    return `<div class="kpi-runner-up-item"><span class="kpi-runner-up-label">${places[index]}</span><br /><span class="kpi-runner-up-value">${escapedValue}</span><br /><span class="kpi-runner-up-context">${escapedContext}</span></div>`;
-                })
+                const escapedValue = runnerUp.value
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;');
+                const escapedContext = runnerUp.context
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;');
+                return `<div class="kpi-runner-up-item"><span class="kpi-runner-up-label">${places[index]}</span><br /><span class="kpi-runner-up-value">${escapedValue}</span><br /><span class="kpi-runner-up-context">${escapedContext}</span></div>`;
+            })
                 .join('');
         };
         if (kpis.busiestHour === undefined) {
@@ -842,9 +858,11 @@ function computeKpisForRange(copiers, cutoffMillis) {
                 setKpiRunnerUps('kpiBusiestCopierHourRunnerUps', kpis.busiestCopierHourRunnerUps
                     .filter((r) => r.copierHours.length > 0)
                     .map((r) => ({
-                        value: formatPrintCount(r.prints),
-                        context: r.copierHours.map((ch) => `${ch.copierName}\n${formatTooltipDateTime(new Date(ch.timeMillis))}`).join('\n')
-                    })));
+                    value: formatPrintCount(r.prints),
+                    context: r.copierHours
+                        .map((ch) => `${ch.copierName}\n${formatTooltipDateTime(new Date(ch.timeMillis))}`)
+                        .join('\n')
+                })));
             }
         }
         if (kpis.mostConsecutiveTopCopier === undefined) {
@@ -856,9 +874,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
             setKpiRunnerUps('kpiTopCopierStreakRunnerUps', kpis.mostConsecutiveTopCopierRunnerUps
                 .filter((r) => r.copierStats.length > 0)
                 .map((r) => ({
-                    value: formatHourCount(r.hours),
-                    context: formatConsecutiveHoursCopierStats(r.copierStats)
-                })));
+                value: formatHourCount(r.hours),
+                context: formatConsecutiveHoursCopierStats(r.copierStats)
+            })));
         }
         if (kpis.mostConsecutiveActiveHours === undefined) {
             setKpi('kpiActiveStreak', noDataValue, noDataContext);
@@ -869,9 +887,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
             setKpiRunnerUps('kpiActiveStreakRunnerUps', kpis.mostConsecutiveActiveHoursRunnerUps
                 .filter((r) => r.copierStats.length > 0)
                 .map((r) => ({
-                    value: formatHourCount(r.hours),
-                    context: formatConsecutiveHoursCopierStats(r.copierStats)
-                })));
+                value: formatHourCount(r.hours),
+                context: formatConsecutiveHoursCopierStats(r.copierStats)
+            })));
         }
         if (kpis.mostHoursLowPrintOverall === undefined) {
             setKpi('kpiLowPrintHours', noDataValue, noDataContext);
