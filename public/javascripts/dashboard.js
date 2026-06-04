@@ -357,17 +357,24 @@ function computeKpisForRange(copiers, cutoffMillis) {
         }
     }
     const hourMapByCopierName = new Map(copierHourMaps.map(({ copier, hourMap }) => [copier.copierName, hourMap]));
-    const longestTopRunByCopierName = new Map();
-    const longestTopRunPrintsByCopierName = new Map();
-    const longestTopRunRangeByCopierName = new Map();
+    const topCopierRunCandidates = [];
     for (const { copier } of copierHourlyDeltas) {
         let currentRun = 0;
-        let previousWasTop = false;
-        let longestRun = 0;
         let currentRunPrints = 0;
-        let longestRunPrints = 0;
         let currentRunStartMillis;
         const hourMap = hourMapByCopierName.get(copier.copierName);
+        function pushCurrentRun(endTimeMillis) {
+            if (currentRun > 1 && currentRunStartMillis !== undefined) {
+                topCopierRunCandidates.push({
+                    copierName: copier.copierName,
+                    endTimeMillis,
+                    run: currentRun,
+                    runPrints: currentRunPrints,
+                    startTimeMillis: currentRunStartMillis,
+                    totalPrints: totalPrintsByCopierName.get(copier.copierName) ?? 0
+                });
+            }
+        }
         for (let index = 0; index < allHours.length; index += 1) {
             const timeMillis = allHours[index];
             const topCopierNames = hourTopCopierNames.get(timeMillis) ?? [];
@@ -375,61 +382,43 @@ function computeKpisForRange(copiers, cutoffMillis) {
             const isConsecutive = index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS;
             if (isTopCopier) {
                 const prints = hourMap?.get(timeMillis) ?? 0;
-                if (isConsecutive && previousWasTop) {
+                if (isConsecutive && currentRun > 0) {
                     currentRun += 1;
                     currentRunPrints += prints;
                 }
                 else {
+                    if (index > 0) {
+                        pushCurrentRun(allHours[index - 1]);
+                    }
                     currentRun = 1;
                     currentRunPrints = prints;
                     currentRunStartMillis = timeMillis;
                 }
             }
             else {
+                if (index > 0) {
+                    pushCurrentRun(allHours[index - 1]);
+                }
                 currentRun = 0;
                 currentRunPrints = 0;
                 currentRunStartMillis = undefined;
             }
-            previousWasTop = isTopCopier;
-            if (currentRun > longestRun && currentRunStartMillis !== undefined) {
-                longestRun = currentRun;
-                longestRunPrints = currentRunPrints;
-                longestTopRunRangeByCopierName.set(copier.copierName, [
-                    currentRunStartMillis,
-                    timeMillis
-                ]);
-            }
-            else if (currentRun === longestRun &&
-                currentRun > 0 &&
-                currentRunPrints > longestRunPrints &&
-                currentRunStartMillis !== undefined) {
-                longestRunPrints = currentRunPrints;
-                longestTopRunRangeByCopierName.set(copier.copierName, [
-                    currentRunStartMillis,
-                    timeMillis
-                ]);
-            }
         }
-        longestTopRunByCopierName.set(copier.copierName, longestRun);
-        longestTopRunPrintsByCopierName.set(copier.copierName, longestRunPrints);
+        const lastHour = allHours.at(-1);
+        if (lastHour !== undefined) {
+            pushCurrentRun(lastHour);
+        }
     }
-    const longestTopRun = Math.max(...longestTopRunByCopierName.values(), 0);
-    const topCopiersSorted = [...longestTopRunByCopierName.entries()]
-        .filter(([, run]) => run > 1)
-        .map(([copierName, run]) => ({
-        copierName,
-        run,
-        runPrints: longestTopRunPrintsByCopierName.get(copierName) ?? 0,
-        totalPrints: totalPrintsByCopierName.get(copierName) ?? 0
-    }))
-        .toSorted((a, b) => b.run - a.run || b.runPrints - a.runPrints || b.totalPrints - a.totalPrints || a.copierName.localeCompare(b.copierName));
+    const topCopiersSorted = [...topCopierRunCandidates].toSorted((a, b) => b.run - a.run ||
+        b.runPrints - a.runPrints ||
+        b.totalPrints - a.totalPrints ||
+        a.copierName.localeCompare(b.copierName) ||
+        a.startTimeMillis - b.startTimeMillis ||
+        a.endTimeMillis - b.endTimeMillis);
     const topConsecutiveTopCopierResults = [];
     let lastTopPlacement;
-    for (const { copierName, run, runPrints } of topCopiersSorted) {
-        const range = longestTopRunRangeByCopierName.get(copierName);
-        if (range === undefined)
-            continue;
-        const stat = { copierName, startTimeMillis: range[0], endTimeMillis: range[1] };
+    for (const { copierName, endTimeMillis, run, runPrints, startTimeMillis } of topCopiersSorted) {
+        const stat = { copierName, startTimeMillis, endTimeMillis };
         if (lastTopPlacement !== undefined &&
             lastTopPlacement.run === run &&
             lastTopPlacement.runPrints === runPrints) {
@@ -443,12 +432,21 @@ function computeKpisForRange(copiers, cutoffMillis) {
             break;
         }
     }
-    const longestActiveRunByCopierName = new Map();
-    const longestActiveRunRangeByCopierName = new Map();
+    const activeRunCandidates = [];
     for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
         let currentRun = 0;
-        let longestRun = 0;
         let currentRunStartMillis;
+        function pushCurrentRun(endTimeMillis) {
+            if (currentRun > 1 && currentRunStartMillis !== undefined) {
+                activeRunCandidates.push({
+                    copierName: copier.copierName,
+                    endTimeMillis,
+                    run: currentRun,
+                    startTimeMillis: currentRunStartMillis,
+                    totalPrints: totalPrintsByCopierName.get(copier.copierName) ?? 0
+                });
+            }
+        }
         for (let index = 0; index < hourlyDeltas.length; index += 1) {
             const [timeMillis, prints] = hourlyDeltas[index];
             const isConsecutive = index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS;
@@ -457,40 +455,35 @@ function computeKpisForRange(copiers, cutoffMillis) {
                     currentRun += 1;
                 }
                 else {
+                    if (index > 0) {
+                        pushCurrentRun(hourlyDeltas[index - 1][0]);
+                    }
                     currentRun = 1;
                     currentRunStartMillis = timeMillis;
                 }
             }
             else {
+                if (index > 0) {
+                    pushCurrentRun(hourlyDeltas[index - 1][0]);
+                }
                 currentRun = 0;
                 currentRunStartMillis = undefined;
             }
-            if (currentRun > longestRun && currentRunStartMillis !== undefined) {
-                longestRun = currentRun;
-                longestActiveRunRangeByCopierName.set(copier.copierName, [
-                    currentRunStartMillis,
-                    timeMillis
-                ]);
-            }
         }
-        longestActiveRunByCopierName.set(copier.copierName, longestRun);
+        const lastHourlyDelta = hourlyDeltas.at(-1);
+        if (lastHourlyDelta !== undefined) {
+            pushCurrentRun(lastHourlyDelta[0]);
+        }
     }
-    const longestActiveRun = Math.max(...longestActiveRunByCopierName.values(), 0);
-    const activeCopiersSorted = [...longestActiveRunByCopierName.entries()]
-        .filter(([, run]) => run > 1)
-        .map(([copierName, run]) => ({
-        copierName,
-        run,
-        totalPrints: totalPrintsByCopierName.get(copierName) ?? 0
-    }))
-        .toSorted((a, b) => b.run - a.run || b.totalPrints - a.totalPrints || a.copierName.localeCompare(b.copierName));
+    const activeCopiersSorted = [...activeRunCandidates].toSorted((a, b) => b.run - a.run ||
+        b.totalPrints - a.totalPrints ||
+        a.copierName.localeCompare(b.copierName) ||
+        a.startTimeMillis - b.startTimeMillis ||
+        a.endTimeMillis - b.endTimeMillis);
     const topConsecutiveActiveHoursResults = [];
     let lastActivePlacement;
-    for (const { copierName, run, totalPrints } of activeCopiersSorted) {
-        const range = longestActiveRunRangeByCopierName.get(copierName);
-        if (range === undefined)
-            continue;
-        const stat = { copierName, startTimeMillis: range[0], endTimeMillis: range[1] };
+    for (const { copierName, endTimeMillis, run, startTimeMillis, totalPrints } of activeCopiersSorted) {
+        const stat = { copierName, startTimeMillis, endTimeMillis };
         if (lastActivePlacement !== undefined &&
             lastActivePlacement.run === run &&
             lastActivePlacement.totalPrints === totalPrints) {
