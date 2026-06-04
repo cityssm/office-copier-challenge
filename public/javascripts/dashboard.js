@@ -310,8 +310,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
         }
     }
-    // Sort copier-hour entries by (prints DESC, totalPrints DESC, copierName ASC, timeMillis ASC)
-    // Group by (prints, totalPrints) pairs — same pair = same placement, max 3 placements
     const sortedCopierHourPrints = [...allCopierHourPrints].toSorted((a, b) => b.prints - a.prints ||
         (totalPrintsByCopierName.get(b.copierName) ?? 0) -
             (totalPrintsByCopierName.get(a.copierName) ?? 0) ||
@@ -395,8 +393,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
         longestTopRunByCopierName.set(copier.copierName, longestRun);
     }
     const longestTopRun = Math.max(...longestTopRunByCopierName.values(), 0);
-    // Sort copiers by (run DESC, totalPrints DESC, copierName ASC)
-    // Group by (run, totalPrints) pairs — same pair = same placement, max 3 placements
     const topCopiersSorted = [...longestTopRunByCopierName.entries()]
         .filter(([, run]) => run > 1)
         .map(([copierName, run]) => ({
@@ -458,8 +454,6 @@ function computeKpisForRange(copiers, cutoffMillis) {
         longestActiveRunByCopierName.set(copier.copierName, longestRun);
     }
     const longestActiveRun = Math.max(...longestActiveRunByCopierName.values(), 0);
-    // Sort copiers by (run DESC, totalPrints DESC, copierName ASC)
-    // Group by (run, totalPrints) pairs — same pair = same placement, max 3 placements
     const activeCopiersSorted = [...longestActiveRunByCopierName.entries()]
         .filter(([, run]) => run > 1)
         .map(([copierName, run]) => ({
