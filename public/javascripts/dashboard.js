@@ -762,12 +762,27 @@ function computeKpisForRange(copiers, cutoffMillis) {
             ],
             xAxis: {
                 type: 'time',
-                min: cutoffMillis,
+                min: useDailyCounts ? normalizeToDay(cutoffMillis) : cutoffMillis,
                 max: nowMillis,
+                ...(useDailyCounts ? { minInterval: DAY_MILLIS } : {}),
                 axisLabel: useDailyCounts
-                    ? {}
+                    ? {
+                        formatter: (value) => new Date(value).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric'
+                        })
+                    }
                     : {
-                        formatter: (value) => formatHourAmPm(new Date(value))
+                        formatter: (value) => {
+                            const date = new Date(value);
+                            if (date.getHours() === 0) {
+                                return date.toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric'
+                                });
+                            }
+                            return formatHourAmPm(date);
+                        }
                     }
             },
             yAxis: {

@@ -1212,13 +1212,30 @@ function computeKpisForRange(
 
       xAxis: {
         type: 'time',
-        min: cutoffMillis,
+        min: useDailyCounts ? normalizeToDay(cutoffMillis) : cutoffMillis,
         max: nowMillis,
 
+        ...(useDailyCounts ? { minInterval: DAY_MILLIS } : {}),
+
         axisLabel: useDailyCounts
-          ? {}
+          ? {
+              formatter: (value: number) =>
+                new Date(value).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric'
+                })
+            }
           : {
-              formatter: (value: number) => formatHourAmPm(new Date(value))
+              formatter: (value: number) => {
+                const date = new Date(value)
+                if (date.getHours() === 0) {
+                  return date.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric'
+                  })
+                }
+                return formatHourAmPm(date)
+              }
             }
       },
       yAxis: {
