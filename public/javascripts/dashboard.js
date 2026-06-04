@@ -356,34 +356,54 @@ function computeKpisForRange(copiers, cutoffMillis) {
             hourTopCopierNames.set(timeMillis, topCopierNames);
         }
     }
+    const hourMapByCopierName = new Map(copierHourMaps.map(({ copier, hourMap }) => [copier.copierName, hourMap]));
     const longestTopRunByCopierName = new Map();
+    const longestTopRunPrintsByCopierName = new Map();
     const longestTopRunRangeByCopierName = new Map();
     for (const { copier } of copierHourlyDeltas) {
         let currentRun = 0;
         let previousWasTop = false;
         let longestRun = 0;
+        let currentRunPrints = 0;
+        let longestRunPrints = 0;
         let currentRunStartMillis;
+        const hourMap = hourMapByCopierName.get(copier.copierName);
         for (let index = 0; index < allHours.length; index += 1) {
             const timeMillis = allHours[index];
             const topCopierNames = hourTopCopierNames.get(timeMillis) ?? [];
             const isTopCopier = topCopierNames.includes(copier.copierName);
             const isConsecutive = index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS;
             if (isTopCopier) {
+                const prints = hourMap?.get(timeMillis) ?? 0;
                 if (isConsecutive && previousWasTop) {
                     currentRun += 1;
+                    currentRunPrints += prints;
                 }
                 else {
                     currentRun = 1;
+                    currentRunPrints = prints;
                     currentRunStartMillis = timeMillis;
                 }
             }
             else {
                 currentRun = 0;
+                currentRunPrints = 0;
                 currentRunStartMillis = undefined;
             }
             previousWasTop = isTopCopier;
             if (currentRun > longestRun && currentRunStartMillis !== undefined) {
                 longestRun = currentRun;
+                longestRunPrints = currentRunPrints;
+                longestTopRunRangeByCopierName.set(copier.copierName, [
+                    currentRunStartMillis,
+                    timeMillis
+                ]);
+            }
+            else if (currentRun === longestRun &&
+                currentRun > 0 &&
+                currentRunPrints > longestRunPrints &&
+                currentRunStartMillis !== undefined) {
+                longestRunPrints = currentRunPrints;
                 longestTopRunRangeByCopierName.set(copier.copierName, [
                     currentRunStartMillis,
                     timeMillis
@@ -391,6 +411,7 @@ function computeKpisForRange(copiers, cutoffMillis) {
             }
         }
         longestTopRunByCopierName.set(copier.copierName, longestRun);
+        longestTopRunPrintsByCopierName.set(copier.copierName, longestRunPrints);
     }
     const longestTopRun = Math.max(...longestTopRunByCopierName.values(), 0);
     const topCopiersSorted = [...longestTopRunByCopierName.entries()]
@@ -398,24 +419,25 @@ function computeKpisForRange(copiers, cutoffMillis) {
         .map(([copierName, run]) => ({
         copierName,
         run,
+        runPrints: longestTopRunPrintsByCopierName.get(copierName) ?? 0,
         totalPrints: totalPrintsByCopierName.get(copierName) ?? 0
     }))
-        .toSorted((a, b) => b.run - a.run || b.totalPrints - a.totalPrints || a.copierName.localeCompare(b.copierName));
+        .toSorted((a, b) => b.run - a.run || b.runPrints - a.runPrints || b.totalPrints - a.totalPrints || a.copierName.localeCompare(b.copierName));
     const topConsecutiveTopCopierResults = [];
     let lastTopPlacement;
-    for (const { copierName, run, totalPrints } of topCopiersSorted) {
+    for (const { copierName, run, runPrints } of topCopiersSorted) {
         const range = longestTopRunRangeByCopierName.get(copierName);
         if (range === undefined)
             continue;
         const stat = { copierName, startTimeMillis: range[0], endTimeMillis: range[1] };
         if (lastTopPlacement !== undefined &&
             lastTopPlacement.run === run &&
-            lastTopPlacement.totalPrints === totalPrints) {
+            lastTopPlacement.runPrints === runPrints) {
             topConsecutiveTopCopierResults[topConsecutiveTopCopierResults.length - 1].copierStats.push(stat);
         }
         else if (topConsecutiveTopCopierResults.length < 3) {
             topConsecutiveTopCopierResults.push({ hours: run, copierStats: [stat] });
-            lastTopPlacement = { run, totalPrints };
+            lastTopPlacement = { run, runPrints };
         }
         else {
             break;
