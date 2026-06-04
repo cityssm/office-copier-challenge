@@ -754,6 +754,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
             series
         });
     };
+    chart.on('datazoom', () => {
+        chart.dispatchAction({ type: 'hideTip' });
+    });
     const checkboxElements = document.querySelectorAll('.js-copier-checkbox');
     const copierSelectionElement = document.querySelector('#copierSelection');
     const copierFilterElement = document.querySelector('#copierNameFilter');
