@@ -18,6 +18,7 @@ const CSV_TOOLBOX_ICON_PATH =
   'path://M256 352L128 224h64V64h128v160h64zM64 416h384v64H64z'
 
 const LOW_PRINT_THRESHOLD = 5
+const DAILY_LOW_PRINT_THRESHOLD = 10
 const DOUBLE_SIDED_PRINT_SHARE = 0.5
 const PAGES_PER_REAM = 500
 const REAMS_PER_CARTON = 10
@@ -412,7 +413,8 @@ interface ConsecutiveHoursResult {
 
 function computeKpisForRange(
   copiers: DashboardCopier[],
-  cutoffMillis: number
+  cutoffMillis: number,
+  useDailyCounts: boolean
 ): {
   busiestHour: { timeMillis: number; totalPrints: number } | undefined
   busiestHourRunnerUps: Array<{ timeMillis: number; totalPrints: number }>
@@ -474,10 +476,15 @@ function computeKpisForRange(
 
   const copierHourlyDeltas = copiers.map((copier) => ({
     copier,
-    hourlyDeltas: buildHourlyDeltaSeries(copier.hourlyCounts).filter(
-      ([timeMillis]) => timeMillis >= cutoffMillis
-    )
+    hourlyDeltas: (useDailyCounts
+      ? buildDailyDeltaSeries(copier.hourlyCounts)
+      : buildHourlyDeltaSeries(copier.hourlyCounts)
+    ).filter(([timeMillis]) => timeMillis >= cutoffMillis)
   }))
+  const slotMillis = useDailyCounts ? DAY_MILLIS : HOUR_MILLIS
+  const lowPrintThreshold = useDailyCounts
+    ? DAILY_LOW_PRINT_THRESHOLD
+    : LOW_PRINT_THRESHOLD
 
   // Build per-copier hour maps and collect all unique hours in range
   const allHoursSet = new Set<number>()
@@ -675,7 +682,7 @@ function computeKpisForRange(
       const topCopierNames = hourTopCopierNames.get(timeMillis) ?? []
       const isTopCopier = topCopierNames.includes(copier.copierName)
       const isConsecutive =
-        index > 0 && allHours[index] - allHours[index - 1] === HOUR_MILLIS
+        index > 0 && allHours[index] - allHours[index - 1] === slotMillis
 
       if (isTopCopier) {
         const prints = hourMap?.get(timeMillis) ?? 0
@@ -780,7 +787,7 @@ function computeKpisForRange(
     for (let index = 0; index < hourlyDeltas.length; index += 1) {
       const [timeMillis, prints] = hourlyDeltas[index]
       const isConsecutive =
-        index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
+        index > 0 && timeMillis - hourlyDeltas[index - 1][0] === slotMillis
 
       if (prints > 0) {
         if (isConsecutive && currentRun > 0) {
@@ -869,9 +876,9 @@ function computeKpisForRange(
     for (let index = 0; index < hourlyDeltas.length; index += 1) {
       const [timeMillis, prints] = hourlyDeltas[index]
       const isConsecutive =
-        index > 0 && timeMillis - hourlyDeltas[index - 1][0] === HOUR_MILLIS
+        index > 0 && timeMillis - hourlyDeltas[index - 1][0] === slotMillis
 
-      if (prints < LOW_PRINT_THRESHOLD) {
+      if (prints < lowPrintThreshold) {
         lowPrintHours += 1
         if (isConsecutive && currentRun > 0) {
           currentRun += 1
@@ -1377,9 +1384,16 @@ function computeKpisForRange(
     }
 
     const { cutoffMillis } = getDurationRange()
-    const kpis = computeKpisForRange(dashboardData.copiers, cutoffMillis)
-
     const selectedDurationDays = Number(chartDurationDaysElement.value)
+    const useDailyCounts =
+      selectedDurationDays === 14 ||
+      selectedDurationDays === 30 ||
+      selectedDurationDays === 60
+    const kpis = computeKpisForRange(
+      dashboardData.copiers,
+      cutoffMillis,
+      useDailyCounts
+    )
     const durationLabel =
       dashboardData.durationOptions.find(
         (option) => option.days === selectedDurationDays
@@ -1400,6 +1414,17 @@ function computeKpisForRange(
 
     const noDataValue = '—'
     const noDataContext = 'No data available'
+    const slotLabel = useDailyCounts ? 'day' : 'hour'
+    const pluralSlotLabel = useDailyCounts ? 'days' : 'hours'
+    const lowPrintThreshold = useDailyCounts
+      ? DAILY_LOW_PRINT_THRESHOLD
+      : LOW_PRINT_THRESHOLD
+    const formatKpiTime = (timeMillis: number): string =>
+      useDailyCounts
+        ? formatShortDate(timeMillis)
+        : formatTooltipDateTime(new Date(timeMillis))
+    const formatKpiRange = (startTimeMillis: number, endTimeMillis: number): string =>
+      `${formatKpiTime(startTimeMillis)} to ${formatKpiTime(endTimeMillis)}`
     const formatCopierNames = (copierNames: string[]): string =>
       copierNames.join('\n')
     const formatConsecutiveHoursCopierStats = (
@@ -1412,13 +1437,43 @@ function computeKpisForRange(
       copierStats
         .map(
           (copierStat) =>
-            `${copierStat.copierName}\n${formatTooltipDateTime(new Date(copierStat.startTimeMillis))} to ${formatTooltipDateTime(new Date(copierStat.endTimeMillis))}`
+            `${copierStat.copierName}\n${formatKpiRange(copierStat.startTimeMillis, copierStat.endTimeMillis)}`
         )
         .join('\n')
     const formatPrintCount = (prints: number): string =>
       `${prints.toLocaleString()} prints`
-    const formatHourCount = (hours: number): string =>
-      `${hours.toLocaleString()} ${hours === 1 ? 'hour' : 'hours'}`
+    const formatSlotCount = (slotCount: number): string =>
+      `${slotCount.toLocaleString()} ${slotCount === 1 ? slotLabel : pluralSlotLabel}`
+
+    const busiestHourNameElement = document.querySelector('#kpiBusiestHourName')
+    const busiestCopierHourNameElement = document.querySelector(
+      '#kpiBusiestCopierHourName'
+    )
+    const topCopierStreakNameElement = document.querySelector(
+      '#kpiTopCopierStreakName'
+    )
+    const activeStreakNameElement = document.querySelector('#kpiActiveStreakName')
+    const lowPrintSlotsNameElement = document.querySelector('#kpiLowPrintHoursName')
+
+    if (busiestHourNameElement instanceof HTMLElement) {
+      busiestHourNameElement.textContent = `Busiest ${slotLabel} (all copiers)`
+    }
+
+    if (busiestCopierHourNameElement instanceof HTMLElement) {
+      busiestCopierHourNameElement.textContent = `Busiest copier & ${slotLabel}`
+    }
+
+    if (topCopierStreakNameElement instanceof HTMLElement) {
+      topCopierStreakNameElement.textContent = `Most consecutive ${pluralSlotLabel} with most prints`
+    }
+
+    if (activeStreakNameElement instanceof HTMLElement) {
+      activeStreakNameElement.textContent = `Most consecutive ${pluralSlotLabel} printing`
+    }
+
+    if (lowPrintSlotsNameElement instanceof HTMLElement) {
+      lowPrintSlotsNameElement.textContent = `Most ${pluralSlotLabel} overall with fewer than ${lowPrintThreshold.toLocaleString()} prints per ${slotLabel}`
+    }
 
     const setKpiRunnerUps = (
       containerId: string,
@@ -1451,13 +1506,13 @@ function computeKpisForRange(
       setKpi(
         'kpiBusiestHour',
         formatPrintCount(kpis.busiestHour.totalPrints),
-        formatTooltipDateTime(new Date(kpis.busiestHour.timeMillis))
+        formatKpiTime(kpis.busiestHour.timeMillis)
       )
       setKpiRunnerUps(
         'kpiBusiestHourRunnerUps',
         kpis.busiestHourRunnerUps.map((h) => ({
           value: formatPrintCount(h.totalPrints),
-          context: formatTooltipDateTime(new Date(h.timeMillis))
+          context: formatKpiTime(h.timeMillis)
         }))
       )
     }
@@ -1478,7 +1533,7 @@ function computeKpisForRange(
           kpis.busiestCopierHour.copierHours
             .map(
               (copierHour) =>
-                `${copierHour.copierName}\n${formatTooltipDateTime(new Date(copierHour.timeMillis))}`
+                `${copierHour.copierName}\n${formatKpiTime(copierHour.timeMillis)}`
             )
             .join('\n')
         )
@@ -1491,7 +1546,7 @@ function computeKpisForRange(
               context: r.copierHours
                 .map(
                   (ch) =>
-                    `${ch.copierName}\n${formatTooltipDateTime(new Date(ch.timeMillis))}`
+                    `${ch.copierName}\n${formatKpiTime(ch.timeMillis)}`
                 )
                 .join('\n')
             }))
@@ -1505,7 +1560,7 @@ function computeKpisForRange(
     } else {
       setKpi(
         'kpiTopCopierStreak',
-        formatHourCount(kpis.mostConsecutiveTopCopier.hours),
+        formatSlotCount(kpis.mostConsecutiveTopCopier.hours),
         formatConsecutiveHoursCopierStats(
           kpis.mostConsecutiveTopCopier.copierStats
         )
@@ -1515,7 +1570,7 @@ function computeKpisForRange(
         kpis.mostConsecutiveTopCopierRunnerUps
           .filter((r) => r.copierStats.length > 0)
           .map((r) => ({
-            value: formatHourCount(r.hours),
+            value: formatSlotCount(r.hours),
             context: formatConsecutiveHoursCopierStats(r.copierStats)
           }))
       )
@@ -1527,7 +1582,7 @@ function computeKpisForRange(
     } else {
       setKpi(
         'kpiActiveStreak',
-        formatHourCount(kpis.mostConsecutiveActiveHours.hours),
+        formatSlotCount(kpis.mostConsecutiveActiveHours.hours),
         formatConsecutiveHoursCopierStats(
           kpis.mostConsecutiveActiveHours.copierStats
         )
@@ -1537,7 +1592,7 @@ function computeKpisForRange(
         kpis.mostConsecutiveActiveHoursRunnerUps
           .filter((r) => r.copierStats.length > 0)
           .map((r) => ({
-            value: formatHourCount(r.hours),
+            value: formatSlotCount(r.hours),
             context: formatConsecutiveHoursCopierStats(r.copierStats)
           }))
       )
@@ -1548,7 +1603,7 @@ function computeKpisForRange(
     } else {
       setKpi(
         'kpiLowPrintHours',
-        formatHourCount(kpis.mostHoursLowPrintOverall.hours),
+        formatSlotCount(kpis.mostHoursLowPrintOverall.hours),
         formatCopierNames(kpis.mostHoursLowPrintOverall.copierNames)
       )
     }
