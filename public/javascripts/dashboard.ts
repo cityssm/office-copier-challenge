@@ -565,19 +565,47 @@ function computeKpisForRange(
     }
   }
 
-  const distinctCopierHourPrintCounts = [
-    ...new Set(allCopierHourPrints.map((c) => c.prints))
-  ]
-    .toSorted((a, b) => b - a)
-    .slice(0, 3)
+  // Sort copier-hour entries by (prints DESC, totalPrints DESC, copierName ASC, timeMillis ASC)
+  // Group by (prints, totalPrints) pairs — same pair = same placement, max 3 placements
+  const sortedCopierHourPrints = [...allCopierHourPrints].toSorted(
+    (a, b) =>
+      b.prints - a.prints ||
+      (totalPrintsByCopierName.get(b.copierName) ?? 0) -
+        (totalPrintsByCopierName.get(a.copierName) ?? 0) ||
+      a.copierName.localeCompare(b.copierName) ||
+      a.timeMillis - b.timeMillis
+  )
 
-  const topBusiestCopierHours: CopierHourResult[] =
-    distinctCopierHourPrintCounts.map((printCount) =>
-      buildCopierHourResult(
-        printCount,
-        allCopierHourPrints.filter((c) => c.prints === printCount)
-      )
-    )
+  const copierHourPlacements: Array<{
+    prints: number
+    totalPrints: number
+    candidates: Array<{ copierName: string; timeMillis: number }>
+  }> = []
+
+  for (const item of sortedCopierHourPrints) {
+    const itemTotalPrints = totalPrintsByCopierName.get(item.copierName) ?? 0
+    const lastPlacement = copierHourPlacements[copierHourPlacements.length - 1]
+
+    if (
+      lastPlacement !== undefined &&
+      lastPlacement.prints === item.prints &&
+      lastPlacement.totalPrints === itemTotalPrints
+    ) {
+      lastPlacement.candidates.push({ copierName: item.copierName, timeMillis: item.timeMillis })
+    } else if (copierHourPlacements.length < 3) {
+      copierHourPlacements.push({
+        prints: item.prints,
+        totalPrints: itemTotalPrints,
+        candidates: [{ copierName: item.copierName, timeMillis: item.timeMillis }]
+      })
+    } else {
+      break
+    }
+  }
+
+  const topBusiestCopierHours: CopierHourResult[] = copierHourPlacements.map((placement) =>
+    buildCopierHourResult(placement.prints, placement.candidates)
+  )
 
   const busiestCopierHour = topBusiestCopierHours[0]
 
@@ -648,28 +676,39 @@ function computeKpisForRange(
 
   const longestTopRun = Math.max(...longestTopRunByCopierName.values(), 0)
 
-  const buildConsecutiveTopCopierResult = (runLength: number): ConsecutiveHoursResult => {
-    const copierNames = [...longestTopRunByCopierName.entries()]
-      .filter(([, run]) => run === runLength)
-      .map(([copierName]) => copierName)
-    const winningNames = getWinningCopierNames(copierNames, true)
-    const stats = winningNames.flatMap((copierName) => {
-      const range = longestTopRunRangeByCopierName.get(copierName)
-      if (range === undefined) return []
-      return [{ copierName, startTimeMillis: range[0], endTimeMillis: range[1] }]
-    })
-    return { hours: runLength, copierStats: stats }
+  // Sort copiers by (run DESC, totalPrints DESC, copierName ASC)
+  // Group by (run, totalPrints) pairs — same pair = same placement, max 3 placements
+  const topCopiersSorted = [...longestTopRunByCopierName.entries()]
+    .filter(([, run]) => run > 1)
+    .map(([copierName, run]) => ({
+      copierName,
+      run,
+      totalPrints: totalPrintsByCopierName.get(copierName) ?? 0
+    }))
+    .toSorted((a, b) => b.run - a.run || b.totalPrints - a.totalPrints || a.copierName.localeCompare(b.copierName))
+
+  const topConsecutiveTopCopierResults: ConsecutiveHoursResult[] = []
+  let lastTopPlacement: { run: number; totalPrints: number } | undefined
+
+  for (const { copierName, run, totalPrints } of topCopiersSorted) {
+    const range = longestTopRunRangeByCopierName.get(copierName)
+    if (range === undefined) continue
+
+    const stat = { copierName, startTimeMillis: range[0], endTimeMillis: range[1] }
+
+    if (
+      lastTopPlacement !== undefined &&
+      lastTopPlacement.run === run &&
+      lastTopPlacement.totalPrints === totalPrints
+    ) {
+      topConsecutiveTopCopierResults[topConsecutiveTopCopierResults.length - 1].copierStats.push(stat)
+    } else if (topConsecutiveTopCopierResults.length < 3) {
+      topConsecutiveTopCopierResults.push({ hours: run, copierStats: [stat] })
+      lastTopPlacement = { run, totalPrints }
+    } else {
+      break
+    }
   }
-
-  const distinctTopRuns = [
-    ...new Set([...longestTopRunByCopierName.values()].filter((r) => r > 1))
-  ]
-    .toSorted((a, b) => b - a)
-    .slice(0, 3)
-
-  const topConsecutiveTopCopierResults = distinctTopRuns.map(
-    buildConsecutiveTopCopierResult
-  )
 
   // KPI 2b: Most consecutive hours with copies > 0
   const longestActiveRunByCopierName = new Map<string, number>()
@@ -711,30 +750,39 @@ function computeKpisForRange(
 
   const longestActiveRun = Math.max(...longestActiveRunByCopierName.values(), 0)
 
-  const buildConsecutiveActiveHoursResult = (
-    runLength: number
-  ): ConsecutiveHoursResult => {
-    const copierNames = [...longestActiveRunByCopierName.entries()]
-      .filter(([, run]) => run === runLength)
-      .map(([copierName]) => copierName)
-    const winningNames = getWinningCopierNames(copierNames, true)
-    const stats = winningNames.flatMap((copierName) => {
-      const range = longestActiveRunRangeByCopierName.get(copierName)
-      if (range === undefined) return []
-      return [{ copierName, startTimeMillis: range[0], endTimeMillis: range[1] }]
-    })
-    return { hours: runLength, copierStats: stats }
+  // Sort copiers by (run DESC, totalPrints DESC, copierName ASC)
+  // Group by (run, totalPrints) pairs — same pair = same placement, max 3 placements
+  const activeCopiersSorted = [...longestActiveRunByCopierName.entries()]
+    .filter(([, run]) => run > 1)
+    .map(([copierName, run]) => ({
+      copierName,
+      run,
+      totalPrints: totalPrintsByCopierName.get(copierName) ?? 0
+    }))
+    .toSorted((a, b) => b.run - a.run || b.totalPrints - a.totalPrints || a.copierName.localeCompare(b.copierName))
+
+  const topConsecutiveActiveHoursResults: ConsecutiveHoursResult[] = []
+  let lastActivePlacement: { run: number; totalPrints: number } | undefined
+
+  for (const { copierName, run, totalPrints } of activeCopiersSorted) {
+    const range = longestActiveRunRangeByCopierName.get(copierName)
+    if (range === undefined) continue
+
+    const stat = { copierName, startTimeMillis: range[0], endTimeMillis: range[1] }
+
+    if (
+      lastActivePlacement !== undefined &&
+      lastActivePlacement.run === run &&
+      lastActivePlacement.totalPrints === totalPrints
+    ) {
+      topConsecutiveActiveHoursResults[topConsecutiveActiveHoursResults.length - 1].copierStats.push(stat)
+    } else if (topConsecutiveActiveHoursResults.length < 3) {
+      topConsecutiveActiveHoursResults.push({ hours: run, copierStats: [stat] })
+      lastActivePlacement = { run, totalPrints }
+    } else {
+      break
+    }
   }
-
-  const distinctActiveRuns = [
-    ...new Set([...longestActiveRunByCopierName.values()].filter((r) => r > 1))
-  ]
-    .toSorted((a, b) => b - a)
-    .slice(0, 3)
-
-  const topConsecutiveActiveHoursResults = distinctActiveRuns.map(
-    buildConsecutiveActiveHoursResult
-  )
 
   // KPI 3: Most consecutive hours with fewer than 5 copies
   const longestLowRunByCopierName = new Map<string, number>()
