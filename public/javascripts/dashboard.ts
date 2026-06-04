@@ -591,20 +591,25 @@ function computeKpisForRange(
       lastPlacement.prints === item.prints &&
       lastPlacement.totalPrints === itemTotalPrints
     ) {
-      lastPlacement.candidates.push({ copierName: item.copierName, timeMillis: item.timeMillis })
+      lastPlacement.candidates.push({
+        copierName: item.copierName,
+        timeMillis: item.timeMillis
+      })
     } else if (copierHourPlacements.length < 3) {
       copierHourPlacements.push({
         prints: item.prints,
         totalPrints: itemTotalPrints,
-        candidates: [{ copierName: item.copierName, timeMillis: item.timeMillis }]
+        candidates: [
+          { copierName: item.copierName, timeMillis: item.timeMillis }
+        ]
       })
     } else {
       break
     }
   }
 
-  const topBusiestCopierHours: CopierHourResult[] = copierHourPlacements.map((placement) =>
-    buildCopierHourResult(placement.prints, placement.candidates)
+  const topBusiestCopierHours: CopierHourResult[] = copierHourPlacements.map(
+    (placement) => buildCopierHourResult(placement.prints, placement.candidates)
   )
 
   const busiestCopierHour = topBusiestCopierHours[0]
@@ -719,7 +724,13 @@ function computeKpisForRange(
   const topConsecutiveTopCopierResults: ConsecutiveHoursResult[] = []
   let lastTopPlacement: { run: number; runPrints: number } | undefined
 
-  for (const { copierName, endTimeMillis, run, runPrints, startTimeMillis } of topCopiersSorted) {
+  for (const {
+    copierName,
+    endTimeMillis,
+    run,
+    runPrints,
+    startTimeMillis
+  } of topCopiersSorted) {
     const stat = { copierName, startTimeMillis, endTimeMillis }
 
     if (
@@ -727,7 +738,9 @@ function computeKpisForRange(
       lastTopPlacement.run === run &&
       lastTopPlacement.runPrints === runPrints
     ) {
-      topConsecutiveTopCopierResults[topConsecutiveTopCopierResults.length - 1].copierStats.push(stat)
+      topConsecutiveTopCopierResults[
+        topConsecutiveTopCopierResults.length - 1
+      ].copierStats.push(stat)
     } else if (topConsecutiveTopCopierResults.length < 3) {
       topConsecutiveTopCopierResults.push({ hours: run, copierStats: [stat] })
       lastTopPlacement = { run, runPrints }
@@ -814,7 +827,13 @@ function computeKpisForRange(
   const topConsecutiveActiveHoursResults: ConsecutiveHoursResult[] = []
   let lastActivePlacement: { run: number; runPrints: number } | undefined
 
-  for (const { copierName, endTimeMillis, run, runPrints, startTimeMillis } of activeCopiersSorted) {
+  for (const {
+    copierName,
+    endTimeMillis,
+    run,
+    runPrints,
+    startTimeMillis
+  } of activeCopiersSorted) {
     const stat = { copierName, startTimeMillis, endTimeMillis }
 
     if (
@@ -822,7 +841,9 @@ function computeKpisForRange(
       lastActivePlacement.run === run &&
       lastActivePlacement.runPrints === runPrints
     ) {
-      topConsecutiveActiveHoursResults[topConsecutiveActiveHoursResults.length - 1].copierStats.push(stat)
+      topConsecutiveActiveHoursResults[
+        topConsecutiveActiveHoursResults.length - 1
+      ].copierStats.push(stat)
     } else if (topConsecutiveActiveHoursResults.length < 3) {
       topConsecutiveActiveHoursResults.push({ hours: run, copierStats: [stat] })
       lastActivePlacement = { run, runPrints }
@@ -1028,7 +1049,10 @@ function computeKpisForRange(
         DAY_MILLIS
 
     const useDailyCounts =
-      selectedDurationDays === 30 || selectedDurationDays === 60
+      selectedDurationDays === 14 ||
+      selectedDurationDays === 30 ||
+      selectedDurationDays === 60
+
     const shadedTimeRanges = buildShadedTimeRanges(
       cutoffMillis,
       nowMillis,

@@ -322,13 +322,18 @@ function computeKpisForRange(copiers, cutoffMillis) {
         if (lastPlacement !== undefined &&
             lastPlacement.prints === item.prints &&
             lastPlacement.totalPrints === itemTotalPrints) {
-            lastPlacement.candidates.push({ copierName: item.copierName, timeMillis: item.timeMillis });
+            lastPlacement.candidates.push({
+                copierName: item.copierName,
+                timeMillis: item.timeMillis
+            });
         }
         else if (copierHourPlacements.length < 3) {
             copierHourPlacements.push({
                 prints: item.prints,
                 totalPrints: itemTotalPrints,
-                candidates: [{ copierName: item.copierName, timeMillis: item.timeMillis }]
+                candidates: [
+                    { copierName: item.copierName, timeMillis: item.timeMillis }
+                ]
             });
         }
         else {
@@ -643,7 +648,9 @@ function computeKpisForRange(copiers, cutoffMillis) {
         const cutoffMillis = nowMillis -
             (Number.isFinite(selectedDurationDays) ? selectedDurationDays : 60) *
                 DAY_MILLIS;
-        const useDailyCounts = selectedDurationDays === 30 || selectedDurationDays === 60;
+        const useDailyCounts = selectedDurationDays === 14 ||
+            selectedDurationDays === 30 ||
+            selectedDurationDays === 60;
         const shadedTimeRanges = buildShadedTimeRanges(cutoffMillis, nowMillis, useDailyCounts, dashboardData.holidayDayStartMillis);
         const selectedCopierIds = [
             ...document.querySelectorAll('.js-copier-checkbox:checked')

@@ -140,7 +140,7 @@ export default function handler(_request: Request, response: Response): void {
   const nowMillis = Date.now()
   const durationOptions = DURATION_PRESETS.filter((durationPreset) => {
     if (
-      durationPreset.days === 14 ||
+      // durationPreset.days === 14 ||
       durationPreset.days === 30 ||
       durationPreset.days === 60
     ) {

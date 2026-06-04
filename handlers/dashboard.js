@@ -92,8 +92,7 @@ export default function handler(_request, response) {
         .toSorted(compareByMostPrints);
     const nowMillis = Date.now();
     const durationOptions = DURATION_PRESETS.filter((durationPreset) => {
-        if (durationPreset.days === 14 ||
-            durationPreset.days === 30 ||
+        if (durationPreset.days === 30 ||
             durationPreset.days === 60) {
             return hourlyMaximums.some((hourlyMaximum) => hourlyMaximum.hourStartMillis <=
                 nowMillis - durationPreset.days * millisecondsInOneDay);
