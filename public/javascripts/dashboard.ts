@@ -741,12 +741,14 @@ function computeKpisForRange(
     copierName: string
     endTimeMillis: number
     run: number
+    runPrints: number
     startTimeMillis: number
     totalPrints: number
   }> = []
 
   for (const { copier, hourlyDeltas } of copierHourlyDeltas) {
     let currentRun = 0
+    let currentRunPrints = 0
     let currentRunStartMillis: number | undefined
 
     function pushCurrentRun(endTimeMillis: number): void {
@@ -755,6 +757,7 @@ function computeKpisForRange(
           copierName: copier.copierName,
           endTimeMillis,
           run: currentRun,
+          runPrints: currentRunPrints,
           startTimeMillis: currentRunStartMillis,
           totalPrints: totalPrintsByCopierName.get(copier.copierName) ?? 0
         })
@@ -769,12 +772,14 @@ function computeKpisForRange(
       if (prints > 0) {
         if (isConsecutive && currentRun > 0) {
           currentRun += 1
+          currentRunPrints += prints
         } else {
           if (index > 0) {
             pushCurrentRun(hourlyDeltas[index - 1][0])
           }
 
           currentRun = 1
+          currentRunPrints = prints
           currentRunStartMillis = timeMillis
         }
       } else {
@@ -783,6 +788,7 @@ function computeKpisForRange(
         }
 
         currentRun = 0
+        currentRunPrints = 0
         currentRunStartMillis = undefined
       }
     }
@@ -793,11 +799,12 @@ function computeKpisForRange(
     }
   }
 
-  // Sort copier runs by (run DESC, totalPrints DESC, copierName ASC, startTimeMillis ASC, endTimeMillis ASC)
-  // Group by (run, totalPrints) pairs — same pair = same placement, max 3 placements
+  // Sort copier runs by (run DESC, runPrints DESC, totalPrints DESC, copierName ASC, startTimeMillis ASC, endTimeMillis ASC)
+  // Group by (run, runPrints) pairs — same pair = same placement, max 3 placements
   const activeCopiersSorted = [...activeRunCandidates].toSorted(
     (a, b) =>
       b.run - a.run ||
+      b.runPrints - a.runPrints ||
       b.totalPrints - a.totalPrints ||
       a.copierName.localeCompare(b.copierName) ||
       a.startTimeMillis - b.startTimeMillis ||
@@ -805,20 +812,20 @@ function computeKpisForRange(
   )
 
   const topConsecutiveActiveHoursResults: ConsecutiveHoursResult[] = []
-  let lastActivePlacement: { run: number; totalPrints: number } | undefined
+  let lastActivePlacement: { run: number; runPrints: number } | undefined
 
-  for (const { copierName, endTimeMillis, run, startTimeMillis, totalPrints } of activeCopiersSorted) {
+  for (const { copierName, endTimeMillis, run, runPrints, startTimeMillis } of activeCopiersSorted) {
     const stat = { copierName, startTimeMillis, endTimeMillis }
 
     if (
       lastActivePlacement !== undefined &&
       lastActivePlacement.run === run &&
-      lastActivePlacement.totalPrints === totalPrints
+      lastActivePlacement.runPrints === runPrints
     ) {
       topConsecutiveActiveHoursResults[topConsecutiveActiveHoursResults.length - 1].copierStats.push(stat)
     } else if (topConsecutiveActiveHoursResults.length < 3) {
       topConsecutiveActiveHoursResults.push({ hours: run, copierStats: [stat] })
-      lastActivePlacement = { run, totalPrints }
+      lastActivePlacement = { run, runPrints }
     } else {
       break
     }
