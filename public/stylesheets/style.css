@@ -90,6 +90,34 @@ html {
   font-weight: 700;
 }
 
+.kpi-runner-up-item {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.kpi-runner-up-label {
+  color: hsl(0deg, 0%, 45%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.kpi-runner-up-value {
+  color: hsl(0deg, 0%, 14%);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.kpi-runner-up-context {
+  color: hsl(0deg, 0%, 29%);
+  font-size: 0.8rem;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
 #refreshToast {
   position: fixed;
   bottom: 1rem;
