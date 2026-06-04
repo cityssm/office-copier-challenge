@@ -1,4 +1,4 @@
-import { minutesToMillis } from '@cityssm/to-millis';
+import { ScheduledTask } from '@cityssm/scheduled-task';
 import Debug from 'debug';
 import exitHook from 'exit-hook';
 import snmp from 'net-snmp';
@@ -7,7 +7,6 @@ import getLatestCopierCountValue from '../database/getLatestCopierCountValue.js'
 import recordCopierCount from '../database/recordCopierCount.js';
 import { DEBUG_NAMESPACE } from '../debug.config.js';
 import { community, oid } from '../helpers/oid.helpers.js';
-const pollingInterval = minutesToMillis(20);
 const debug = Debug(`${DEBUG_NAMESPACE}:tasks:snmp`);
 function recordLastKnownCount(copier, oid) {
     let lastCountValue;
@@ -76,8 +75,11 @@ function pollCopiers() {
         }
     }
 }
-pollCopiers();
-const interval = setInterval(pollCopiers, pollingInterval);
+const task = new ScheduledTask('SNMP Polling', pollCopiers, {
+    schedule: '59,39,19 * * * *'
+});
+await task.runTask();
+task.startTask();
 exitHook(() => {
-    clearInterval(interval);
+    task.stopTask();
 });
