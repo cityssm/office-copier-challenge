@@ -155,7 +155,7 @@ function buildDailyDeltaSeries(
   const dailyPrints = new Map<number, number>()
 
   for (const [timeMillis, prints] of hourlyDeltas) {
-    const dayStartMillis = normalizeToDay(timeMillis)
+    const dayStartMillis = normalizeToLocalDay(timeMillis)
     dailyPrints.set(
       dayStartMillis,
       (dailyPrints.get(dayStartMillis) ?? 0) + prints
@@ -176,7 +176,7 @@ function buildPaddedStackedSeries(
   }
 
   const slotMillis = useDailyCounts ? DAY_MILLIS : HOUR_MILLIS
-  const normalizeTime = useDailyCounts ? normalizeToDay : normalizeToHour
+  const normalizeTime = useDailyCounts ? normalizeToLocalDay : normalizeToHour
   const rangeStartMillis = normalizeTime(cutoffMillis)
   const rangeEndMillis = normalizeTime(nowMillis)
 
@@ -1212,7 +1212,7 @@ function computeKpisForRange(
 
       xAxis: {
         type: 'time',
-        min: useDailyCounts ? normalizeToDay(cutoffMillis) : cutoffMillis,
+        min: useDailyCounts ? normalizeToLocalDay(cutoffMillis) : cutoffMillis,
         max: nowMillis,
 
         ...(useDailyCounts ? { minInterval: DAY_MILLIS } : {}),
