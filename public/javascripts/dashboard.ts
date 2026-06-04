@@ -1453,7 +1453,7 @@ function computeKpisForRange(
       '#kpiTopCopierStreakName'
     )
     const activeStreakNameElement = document.querySelector('#kpiActiveStreakName')
-    const lowPrintHoursNameElement = document.querySelector('#kpiLowPrintHoursName')
+    const lowPrintSlotsNameElement = document.querySelector('#kpiLowPrintHoursName')
 
     if (busiestHourNameElement instanceof HTMLElement) {
       busiestHourNameElement.textContent = `Busiest ${slotLabel} (all copiers)`
@@ -1471,8 +1471,8 @@ function computeKpisForRange(
       activeStreakNameElement.textContent = `Most consecutive ${pluralSlotLabel} printing`
     }
 
-    if (lowPrintHoursNameElement instanceof HTMLElement) {
-      lowPrintHoursNameElement.textContent = `Most ${pluralSlotLabel} overall with fewer than ${lowPrintThreshold.toLocaleString()} prints per ${slotLabel}`
+    if (lowPrintSlotsNameElement instanceof HTMLElement) {
+      lowPrintSlotsNameElement.textContent = `Most ${pluralSlotLabel} overall with fewer than ${lowPrintThreshold.toLocaleString()} prints per ${slotLabel}`
     }
 
     const setKpiRunnerUps = (

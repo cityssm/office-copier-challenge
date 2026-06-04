@@ -917,7 +917,7 @@ function computeKpisForRange(copiers, cutoffMillis, useDailyCounts) {
         const busiestCopierHourNameElement = document.querySelector('#kpiBusiestCopierHourName');
         const topCopierStreakNameElement = document.querySelector('#kpiTopCopierStreakName');
         const activeStreakNameElement = document.querySelector('#kpiActiveStreakName');
-        const lowPrintHoursNameElement = document.querySelector('#kpiLowPrintHoursName');
+        const lowPrintSlotsNameElement = document.querySelector('#kpiLowPrintHoursName');
         if (busiestHourNameElement instanceof HTMLElement) {
             busiestHourNameElement.textContent = `Busiest ${slotLabel} (all copiers)`;
         }
@@ -930,8 +930,8 @@ function computeKpisForRange(copiers, cutoffMillis, useDailyCounts) {
         if (activeStreakNameElement instanceof HTMLElement) {
             activeStreakNameElement.textContent = `Most consecutive ${pluralSlotLabel} printing`;
         }
-        if (lowPrintHoursNameElement instanceof HTMLElement) {
-            lowPrintHoursNameElement.textContent = `Most ${pluralSlotLabel} overall with fewer than ${lowPrintThreshold.toLocaleString()} prints per ${slotLabel}`;
+        if (lowPrintSlotsNameElement instanceof HTMLElement) {
+            lowPrintSlotsNameElement.textContent = `Most ${pluralSlotLabel} overall with fewer than ${lowPrintThreshold.toLocaleString()} prints per ${slotLabel}`;
         }
         const setKpiRunnerUps = (containerId, runnerUps) => {
             const container = document.querySelector(`#${containerId}`);
