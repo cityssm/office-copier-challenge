@@ -819,7 +819,7 @@ function computeKpisForRange(copiers, cutoffMillis, useDailyCounts) {
     let showHiddenCopiers = false;
     let isStackedChart = false;
     let copierNameFilterText = '';
-    let excludeOfficeServicesFromRankings = false;
+    let excludeOfficeServicesFromRankings = true;
     const getDurationRange = () => {
         const selectedDurationDays = Number(chartDurationDaysElement.value);
         const nowMillis = Date.now();
