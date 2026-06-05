@@ -1281,7 +1281,7 @@ function computeKpisForRange(
   let showHiddenCopiers = false
   let isStackedChart = false
   let copierNameFilterText = ''
-  let excludeOfficeServicesFromRankings = false
+  let excludeOfficeServicesFromRankings = true
 
   const getDurationRange = (): {
     cutoffMillis: number
