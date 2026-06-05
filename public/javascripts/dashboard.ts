@@ -1394,8 +1394,8 @@ function computeKpisForRange(
   const updateKpiOfficeServicesToggleButtons = (): void => {
     for (const toggleElement of kpiOfficeServicesToggleElements) {
       toggleElement.textContent = excludeOfficeServicesFromRankings
-        ? 'Exclude Office Services'
-        : 'Include Office Services'
+        ? 'Include Office Services'
+        : 'Exclude Office Services'
       toggleElement.setAttribute(
         'aria-pressed',
         excludeOfficeServicesFromRankings ? 'true' : 'false'
