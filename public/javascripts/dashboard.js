@@ -11,8 +11,8 @@ const DOUBLE_SIDED_PRINT_SHARE = 0.5;
 const PAGES_PER_REAM = 500;
 const REAMS_PER_CARTON = 10;
 const TREES_PER_CARTON = 0.6;
-const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.2;
-const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.05;
+const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.05;
+const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.01;
 const COPIER_BAND_CLASSES = [
     'has-background-danger-light',
     'has-background-warning-light',
@@ -24,9 +24,9 @@ const COPIER_ICON_CLASSES = [
     'has-text-success'
 ];
 const COPIER_TIER_LABELS = [
-    'Over 20% of total prints',
-    '5% to 20% of total prints',
-    'Under 5% of total prints'
+    'Over 5% of total prints',
+    '1% to 5% of total prints',
+    'Under 1% of total prints'
 ];
 function normalizeToHour(timeMillis) {
     return Math.floor(timeMillis / HOUR_MILLIS) * HOUR_MILLIS;
