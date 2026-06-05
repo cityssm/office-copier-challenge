@@ -13,6 +13,7 @@ const REAMS_PER_CARTON = 10;
 const TREES_PER_CARTON = 0.6;
 const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.05;
 const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.01;
+const OFFICE_SERVICES_NAME_FRAGMENT = 'office services';
 const COPIER_BAND_CLASSES = [
     'has-background-danger-light',
     'has-background-warning-light',
@@ -144,6 +145,9 @@ function formatFractionalEstimate(value) {
     return value.toLocaleString(undefined, {
         maximumFractionDigits: 2
     });
+}
+function isOfficeServicesCopier(copier) {
+    return copier.copierName.toLowerCase().includes(OFFICE_SERVICES_NAME_FRAGMENT);
 }
 function calculateEstimatedPaperImpact(totalPrints) {
     const estimatedPages = Math.round(totalPrints * (1 - DOUBLE_SIDED_PRINT_SHARE + DOUBLE_SIDED_PRINT_SHARE / 2));
@@ -811,9 +815,11 @@ function computeKpisForRange(copiers, cutoffMillis, useDailyCounts) {
     const copierSelectionElement = document.querySelector('#copierSelection');
     const copierFilterElement = document.querySelector('#copierNameFilter');
     const copierOptionElements = document.querySelectorAll('.js-copier-option');
+    const kpiOfficeServicesToggleElements = document.querySelectorAll('.js-kpi-office-services-toggle');
     let showHiddenCopiers = false;
     let isStackedChart = false;
     let copierNameFilterText = '';
+    let excludeOfficeServicesFromRankings = false;
     const getDurationRange = () => {
         const selectedDurationDays = Number(chartDurationDaysElement.value);
         const nowMillis = Date.now();
@@ -874,6 +880,17 @@ function computeKpisForRange(copiers, cutoffMillis, useDailyCounts) {
         catch {
         }
     };
+    const getCopiersForRankings = () => excludeOfficeServicesFromRankings
+        ? dashboardData.copiers.filter((copier) => !isOfficeServicesCopier(copier))
+        : dashboardData.copiers;
+    const updateKpiOfficeServicesToggleButtons = () => {
+        for (const toggleElement of kpiOfficeServicesToggleElements) {
+            toggleElement.textContent = excludeOfficeServicesFromRankings
+                ? 'Include Office Services'
+                : 'Exclude Office Services';
+            toggleElement.setAttribute('aria-pressed', excludeOfficeServicesFromRankings ? 'true' : 'false');
+        }
+    };
     const updateKpis = () => {
         const kpiSectionElement = document.querySelector('#kpiSection');
         if (!(kpiSectionElement instanceof HTMLElement)) {
@@ -884,7 +901,7 @@ function computeKpisForRange(copiers, cutoffMillis, useDailyCounts) {
         const useDailyCounts = selectedDurationDays === 14 ||
             selectedDurationDays === 30 ||
             selectedDurationDays === 60;
-        const kpis = computeKpisForRange(dashboardData.copiers, cutoffMillis, useDailyCounts);
+        const kpis = computeKpisForRange(getCopiersForRankings(), cutoffMillis, useDailyCounts);
         const durationLabel = dashboardData.durationOptions.find((option) => option.days === selectedDurationDays)?.label ?? '';
         const setKpi = (idBase, value, context) => {
             const valueElement = document.querySelector(`#${idBase}Value`);
@@ -1248,6 +1265,13 @@ function computeKpisForRange(copiers, cutoffMillis, useDailyCounts) {
         showHiddenCopiers = !showHiddenCopiers;
         updateCopierVisibility();
     });
+    for (const toggleElement of kpiOfficeServicesToggleElements) {
+        toggleElement.addEventListener('click', () => {
+            excludeOfficeServicesFromRankings = !excludeOfficeServicesFromRankings;
+            updateKpiOfficeServicesToggleButtons();
+            updateKpis();
+        });
+    }
     selectAllCopiersElement.addEventListener('click', () => {
         applySelectedCopierIds(new Set(dashboardData.copiers.map((copier) => copier.copierId)));
         storeSelectedCopierIds();
@@ -1356,6 +1380,7 @@ function computeKpisForRange(copiers, cutoffMillis, useDailyCounts) {
             closeElement.addEventListener('click', closeTipsModal);
         }
     }
+    updateKpiOfficeServicesToggleButtons();
     updateCopierCountsForDuration();
     const storedSelectedCopierIds = loadSelectedCopierIds();
     applySelectedCopierIds(storedSelectedCopierIds ?? getDefaultSelectedCopierIds());

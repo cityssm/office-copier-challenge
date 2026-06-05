@@ -68,6 +68,21 @@ html {
   margin-bottom: 0.75rem;
 }
 
+.kpi-title-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.kpi-title-row .kpi-name {
+  margin-bottom: 0;
+}
+
+.kpi-ranking-toggle {
+  flex-shrink: 0;
+}
+
 .kpi-value {
   color: hsl(0deg, 0%, 14%);
   font-size: 2.25rem;

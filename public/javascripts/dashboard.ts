@@ -25,6 +25,7 @@ const REAMS_PER_CARTON = 10
 const TREES_PER_CARTON = 0.6
 const HIGH_USAGE_PRINT_SHARE_THRESHOLD = 0.05
 const LOW_USAGE_PRINT_SHARE_THRESHOLD = 0.01
+const OFFICE_SERVICES_NAME_FRAGMENT = 'office services'
 
 const COPIER_BAND_CLASSES = [
   'has-background-danger-light',
@@ -259,6 +260,10 @@ function formatFractionalEstimate(value: number): string {
   return value.toLocaleString(undefined, {
     maximumFractionDigits: 2
   })
+}
+
+function isOfficeServicesCopier(copier: DashboardCopier): boolean {
+  return copier.copierName.toLowerCase().includes(OFFICE_SERVICES_NAME_FRAGMENT)
 }
 
 function calculateEstimatedPaperImpact(totalPrints: number): {
@@ -1271,9 +1276,12 @@ function computeKpisForRange(
   const copierFilterElement = document.querySelector('#copierNameFilter')
   const copierOptionElements =
     document.querySelectorAll<HTMLDivElement>('.js-copier-option')
+  const kpiOfficeServicesToggleElements =
+    document.querySelectorAll<HTMLButtonElement>('.js-kpi-office-services-toggle')
   let showHiddenCopiers = false
   let isStackedChart = false
   let copierNameFilterText = ''
+  let excludeOfficeServicesFromRankings = false
 
   const getDurationRange = (): {
     cutoffMillis: number
@@ -1376,6 +1384,25 @@ function computeKpisForRange(
     }
   }
 
+  const getCopiersForRankings = (): DashboardCopier[] =>
+    excludeOfficeServicesFromRankings
+      ? dashboardData.copiers.filter(
+          (copier) => !isOfficeServicesCopier(copier)
+        )
+      : dashboardData.copiers
+
+  const updateKpiOfficeServicesToggleButtons = (): void => {
+    for (const toggleElement of kpiOfficeServicesToggleElements) {
+      toggleElement.textContent = excludeOfficeServicesFromRankings
+        ? 'Include Office Services'
+        : 'Exclude Office Services'
+      toggleElement.setAttribute(
+        'aria-pressed',
+        excludeOfficeServicesFromRankings ? 'true' : 'false'
+      )
+    }
+  }
+
   const updateKpis = (): void => {
     const kpiSectionElement = document.querySelector('#kpiSection')
 
@@ -1390,7 +1417,7 @@ function computeKpisForRange(
       selectedDurationDays === 30 ||
       selectedDurationDays === 60
     const kpis = computeKpisForRange(
-      dashboardData.copiers,
+      getCopiersForRankings(),
       cutoffMillis,
       useDailyCounts
     )
@@ -2003,6 +2030,14 @@ function computeKpisForRange(
     updateCopierVisibility()
   })
 
+  for (const toggleElement of kpiOfficeServicesToggleElements) {
+    toggleElement.addEventListener('click', () => {
+      excludeOfficeServicesFromRankings = !excludeOfficeServicesFromRankings
+      updateKpiOfficeServicesToggleButtons()
+      updateKpis()
+    })
+  }
+
   selectAllCopiersElement.addEventListener('click', () => {
     applySelectedCopierIds(
       new Set(dashboardData.copiers.map((copier) => copier.copierId))
@@ -2148,6 +2183,7 @@ function computeKpisForRange(
     }
   }
 
+  updateKpiOfficeServicesToggleButtons()
   updateCopierCountsForDuration()
 
   const storedSelectedCopierIds = loadSelectedCopierIds()
