@@ -114,6 +114,8 @@ function pollCopiers(): void {
         error
       )
       recordLastKnownCount(copier, oidToPoll)
+    } finally {
+      snmpSession.close()
     }
   }
 }

@@ -73,6 +73,9 @@ function pollCopiers() {
             debug(`Error initiating SNMP session for copier ${copier.copierName} (${copier.ipAddress}):`, error);
             recordLastKnownCount(copier, oidToPoll);
         }
+        finally {
+            snmpSession.close();
+        }
     }
 }
 const task = new ScheduledTask('SNMP Polling', pollCopiers, {
