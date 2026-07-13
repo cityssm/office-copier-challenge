@@ -31,11 +31,13 @@ function recordLastKnownCount(copier, oid) {
     });
 }
 function pollCopiers() {
+    debug('Polling copiers via SNMP');
     const copiers = getCopiers();
     for (const copier of copiers) {
         const snmpSession = snmp.createSession(copier.ipAddress, community);
         const oidToPoll = copier.oid ?? oid;
         try {
+            debug(`Polling copier ${copier.copierName} (${copier.ipAddress}) for OID ${oidToPoll}`);
             snmpSession.get([oidToPoll], (error, varbinds) => {
                 if (error) {
                     debug(`Error polling copier ${copier.copierName} (${copier.ipAddress}):`, error);
@@ -43,6 +45,7 @@ function pollCopiers() {
                 }
                 else {
                     let didRecordCurrentValue = false;
+                    debug(`Received SNMP response from copier ${copier.copierName} (${copier.ipAddress})`);
                     for (const varbind of varbinds ?? []) {
                         if (snmp.isVarbindError(varbind)) {
                             debug(`SNMP error for copier ${copier.copierName} (${copier.ipAddress}):`, snmp.varbindError(varbind));
@@ -67,17 +70,16 @@ function pollCopiers() {
                         recordLastKnownCount(copier, oidToPoll);
                     }
                 }
+                snmpSession.close();
             });
         }
         catch (error) {
             debug(`Error initiating SNMP session for copier ${copier.copierName} (${copier.ipAddress}):`, error);
             recordLastKnownCount(copier, oidToPoll);
         }
-        finally {
-            snmpSession.close();
-        }
     }
 }
+debug('Starting SNMP polling task');
 const task = new ScheduledTask('SNMP Polling', pollCopiers, {
     schedule: '59,39,19 * * * *'
 });
